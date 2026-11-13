@@ -45,24 +45,24 @@
                     <!-- All 3 Financial Figures Rendered Together -->
                     <div class="row g-2 mb-3">
                         <div class="col-12">
-                            <div class="p-3 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-25 d-flex justify-content-between align-items-center">
+                            <div class="p-3 bg-light rounded-3 border d-flex justify-content-between align-items-center">
                                 <div>
                                     <span class="text-secondary small d-block"><i class="fa-solid fa-bullseye text-primary me-1"></i> Total Expected Budget</span>
-                                    <strong class="fs-4 text-primary">₹{{ metrics.total_expected|floatformat:0|intcomma }}</strong>
+                                    <strong class="fs-4 text-dark">₹{{ metrics.total_expected|floatformat:0|intcomma }}</strong>
                                 </div>
                                 <span class="badge bg-primary text-white rounded-pill px-2 py-1 small">Target Goal</span>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25">
+                            <div class="p-3 bg-light rounded-3 border">
                                 <span class="text-secondary small d-block"><i class="fa-solid fa-hand-holding-dollar text-success me-1"></i> Total Raised in Trust</span>
                                 <strong class="fs-5 text-success">₹{{ metrics.total_raised|floatformat:0|intcomma }}</strong>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="p-3 bg-warning bg-opacity-10 rounded-3 border border-warning border-opacity-25">
+                            <div class="p-3 bg-light rounded-3 border">
                                 <span class="text-secondary small d-block"><i class="fa-solid fa-hourglass-half text-warning me-1"></i> Pending Pledges</span>
-                                <strong class="fs-5 text-warning">₹{{ metrics.total_pending|floatformat:0|intcomma }}</strong>
+                                <strong class="fs-5 text-dark">₹{{ metrics.total_pending|floatformat:0|intcomma }}</strong>
                             </div>
                         </div>
                     </div>

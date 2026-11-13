@@ -93,34 +93,23 @@ main {
     max-width: 650px;
 }
 
-/* Metric Cards */
+/* Metric Cards - Uniform Clean Light Outline */
 .metric-card {
     background: #ffffff;
     border-radius: 14px;
     padding: 1.5rem;
-    border: 1.5px solid #1e293b;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
     height: 100%;
     position: relative;
     overflow: hidden;
 }
 .metric-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e1;
 }
-.metric-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-}
-.metric-card.border-expected::before { background: #3b82f6; }
-.metric-card.border-raised::before { background: #10b981; }
-.metric-card.border-pending::before { background: #f59e0b; }
-.metric-card.border-donors::before { background: #8b5cf6; }
 
 .metric-title {
     font-size: 0.82rem;
@@ -146,12 +135,12 @@ main {
     font-size: 1.3rem;
 }
 
-/* Custom Cards - High Polish & Crisp Dark Outline */
+/* Custom Cards - Uniform Clean Light Outline */
 .trust-card {
     background: #ffffff;
     border-radius: 14px;
-    border: 1.5px solid #1e293b;
-    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
     overflow: hidden;
     height: 100%;
@@ -159,9 +148,9 @@ main {
     flex-direction: column;
 }
 .trust-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-    border-color: #0f172a;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e1;
 }
 .card-img-wrap {
     height: 200px;
@@ -208,8 +197,8 @@ main {
 .trustee-card {
     background: #ffffff;
     border-radius: 14px;
-    border: 1.5px solid #1e293b;
-    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     padding: 1.75rem 1.5rem;
     text-align: center;
     transition: all 0.25s;
@@ -219,14 +208,14 @@ main {
     justify-content: space-between;
 }
 .trustee-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-    border-color: #0f172a;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    border-color: #cbd5e1;
 }
 
-/* Card Crisp Outline System */
+/* Card Clean Light Outline System */
 .card {
-    border: 1.5px solid #1e293b;
+    border: 1px solid #e2e8f0;
 }
 .trustee-avatar-wrapper {
     width: 120px;
