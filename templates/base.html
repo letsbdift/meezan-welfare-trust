@@ -92,6 +92,10 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+    <!-- Accessibility Skip to Main Content Link (WCAG 2.1 AA) -->
+    <a href="#main-content" class="skip-link visually-hidden-focusable p-3 bg-dark text-white position-absolute top-0 start-0 z-3">
+        Skip to main content
+    </a>
 
     <!-- Top Info Bar with Official SBI Banking & WhatsApp -->
     <div class="py-1 bg-dark text-white text-xs d-none d-md-block" style="font-size: 0.8rem; background-color: #064e3b !important;">
@@ -207,7 +211,7 @@
     </div>
 
     <!-- Main Dynamic Content -->
-    <main>
+    <main id="main-content">
         {% block content %}{% endblock %}
     </main>
 

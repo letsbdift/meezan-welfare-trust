@@ -241,12 +241,18 @@ class MeezanTrustComprehensiveTestCase(TestCase):
         self.assertEqual(updated_metrics['total_raised'], initial_raised + Decimal('8000.00'))
 
     def test_dashboard_metrics(self):
+        # 1. Public view (Read-Only)
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         metrics = response.context['metrics']
         self.assertGreaterEqual(metrics['total_raised'], Decimal('50000.00'))
-        self.assertContains(response, 'Charitable Trust Dynamics Dashboard')
-        self.assertContains(response, 'Pending Pledges & Automated WhatsApp Reminders')
+        self.assertContains(response, 'Financial Transparency')
+        self.assertContains(response, 'Total Raised in Trust')
+
+        # 2. Authenticated Staff view has Pending Pledges & follow-ups
+        self.client.login(username='trustee_admin', password='testpassword123')
+        staff_response = self.client.get(reverse('dashboard'))
+        self.assertContains(staff_response, 'Pending Pledges')
 
     def test_trustees_list(self):
         response = self.client.get(reverse('trustees_list'))
@@ -445,3 +451,70 @@ class MeezanTrustComprehensiveTestCase(TestCase):
         self.assertEqual(home_res.status_code, 200)
         self.assertEqual(home_res.headers.get('X-Content-Type-Options'), 'nosniff')
         self.assertEqual(home_res.headers.get('X-Frame-Options'), 'SAMEORIGIN')
+
+    def test_rbac_strict_security_and_bulk_broadcast(self):
+        # 1. Test anonymous access to admin views is blocked (302 redirects to login)
+        admin_endpoints = [
+            reverse('admin_portal'),
+            reverse('bulk_broadcast'),
+            reverse('bulk_remind_pending'),
+            reverse('export_donors_csv'),
+            reverse('whatsapp_logs'),
+            reverse('send_whatsapp_reminder', kwargs={'donation_id': self.pending_pledge.id}),
+            reverse('broadcast_event_whatsapp', kwargs={'event_id': self.event.id}),
+            reverse('initiative_create'),
+            reverse('donor_create'),
+            reverse('photo_create'),
+        ]
+        for url in admin_endpoints:
+            res = self.client.get(url)
+            self.assertEqual(res.status_code, 302, f"URL {url} must redirect unauthenticated users")
+            self.assertIn('/login/', res.url)
+
+        # 2. Test Public Dashboard Privacy (Anonymous Visitor)
+        public_dash = self.client.get(reverse('dashboard'))
+        self.assertEqual(public_dash.status_code, 200)
+        # Should not leak donor phone number
+        self.assertNotContains(public_dash, '+919845112233')
+        # Should not display admin reminder triggers or admin buttons
+        self.assertNotContains(public_dash, 'Remind All Pending')
+        self.assertNotContains(public_dash, 'Admin Mode')
+        # Donor name in public feed should be masked
+        self.assertContains(public_dash, 'H*** S.')
+        # Prominent donation options must be present
+        self.assertContains(public_dash, 'Donate Now')
+        self.assertContains(public_dash, 'SBI UPI QR')
+
+        # 3. Test Staff Dashboard View (Authenticated Admin)
+        self.client.login(username='trustee_admin', password='testpassword123')
+        staff_dash = self.client.get(reverse('dashboard'))
+        self.assertEqual(staff_dash.status_code, 200)
+        self.assertContains(staff_dash, 'Admin Mode')
+        self.assertContains(staff_dash, '+919845112233')
+        self.assertContains(staff_dash, 'Remind All Pending')
+
+        # 4. Test Bulk Broadcast to Categorized Donors
+        broadcast_res = self.client.post(reverse('bulk_broadcast'), {
+            'broadcast_type': 'CAMPAIGN_APPEAL',
+            'category': 'ALL',
+            'custom_message': 'Custom broadcast appeal for {donor_name}: {cause_title}'
+        })
+        self.assertEqual(broadcast_res.status_code, 302)
+        
+        # Verify notification created
+        notif = WhatsAppNotification.objects.filter(notification_type='CAMPAIGN_APPEAL').first()
+        self.assertIsNotNone(notif)
+        self.assertIn('Custom broadcast appeal', notif.message_body)
+        self.assertTrue(notif.direct_wa_link.startswith('https://wa.me/'))
+
+        # 5. Test Bulk Automated Reminders for Pending Pledges
+        remind_res = self.client.post(reverse('bulk_remind_pending'))
+        self.assertEqual(remind_res.status_code, 302)
+        reminder_notif = WhatsAppNotification.objects.filter(notification_type='PAYMENT_REMINDER').first()
+        self.assertIsNotNone(reminder_notif)
+        self.assertIn(self.pending_pledge.donor_phone, reminder_notif.recipient_phone)
+
+        # 6. Test Content-Security-Policy & Security Middleware
+        home_res = self.client.get(reverse('home'))
+        self.assertIn('Content-Security-Policy', home_res.headers)
+        self.assertIn('Permissions-Policy', home_res.headers)

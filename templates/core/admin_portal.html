@@ -107,6 +107,11 @@
                         <i class="fa-solid fa-users-viewfinder text-primary me-1"></i> Donors & Categorization ({{ donor_stats.total }})
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 fw-bold text-dark border-0" id="broadcast-tab" data-bs-toggle="tab" data-bs-target="#broadcast" type="button" role="tab">
+                        <i class="fa-brands fa-whatsapp text-success me-1"></i> Bulk Broadcast & Messaging
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -1320,6 +1325,195 @@ Reg: 4-00103-2025-26 | +91 87222 11966</div>
                     </div>
                 </div>
 
+                <!-- TAB 9: BULK BROADCAST & CAMPAIGN OUTREACH -->
+                <div class="tab-pane fade" id="broadcast" role="tabpanel">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 border-bottom pb-3">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-success px-3 py-1 rounded-pill"><i class="fa-brands fa-whatsapp me-1"></i> WhatsApp Outreach Engine</span>
+                                <span class="badge bg-primary-subtle text-primary px-3 py-1 rounded-pill"><i class="fa-solid fa-shield-halved me-1"></i> Staff Restricted</span>
+                            </div>
+                            <h4 class="fw-bold text-dark mb-1">Secure Bulk Messaging & Broadcast Hub</h4>
+                            <p class="text-secondary small mb-0">Reach categorized donors with targeted WhatsApp appeals, emergency relief requests, and automated payment reminders.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'whatsapp_logs' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                <i class="fa-solid fa-clock-rotate-left me-1"></i> View All Dispatch Logs
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Quick Action 1: Automated Payment Reminders to Pending Donors -->
+                    <div class="card border-0 shadow-sm rounded-4 mb-4 border-start border-4 border-warning bg-light bg-opacity-50 p-4">
+                        <div class="row align-items-center g-3">
+                            <div class="col-lg-8">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="badge bg-warning text-dark fw-bold px-2 py-0.5 rounded-pill small">Automated Recovery</span>
+                                    <h5 class="fw-bold mb-0 text-dark">Broadcast Payment Reminders to All Pending Pledges</h5>
+                                </div>
+                                <p class="text-muted small mb-0">
+                                    Sends personalized, polite WhatsApp reminder notifications containing direct RazorPay payment links and SBI details to all <strong>{{ pending_donations.count }} pending pledge supporters</strong>.
+                                </p>
+                            </div>
+                            <div class="col-lg-4 text-lg-end">
+                                <form action="{% url 'bulk_remind_pending' %}" method="POST" onsubmit="return confirm('Send automated WhatsApp payment reminders to all {{ pending_donations.count }} donors with pending pledges?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-warning rounded-pill px-4 py-2 fw-bold shadow-sm" {% if pending_donations.count == 0 %}disabled{% endif %}>
+                                        <i class="fa-solid fa-paper-plane me-1"></i> Remind All Pending ({{ pending_donations.count }})
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Broadcast Campaign Composer Form -->
+                    <div class="card border-0 shadow-sm rounded-4 mb-4 border bg-white p-4">
+                        <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-bullhorn text-success me-2"></i>Compose & Dispatch Bulk Campaign Appeal</h5>
+                        <form action="{% url 'bulk_broadcast' %}" method="POST" onsubmit="return confirm('Are you sure you want to dispatch this WhatsApp broadcast to the selected audience?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="broadcast_type" value="CAMPAIGN_APPEAL">
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-dark">Target Donor Category Audience</label>
+                                    <select name="category" id="broadcastCategory" class="form-select rounded-3">
+                                        <option value="ALL">All Opted-In Donors ({{ donor_stats.total }} contacts)</option>
+                                        {% for code, label in donor_categories %}
+                                        <option value="{{ code }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text small">Select donor segment for targeted messaging.</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold small text-dark">Associated Trust Initiative / Cause</label>
+                                    <select name="initiative_id" id="broadcastInitiative" class="form-select rounded-3">
+                                        <option value="">General Community Welfare Fund (All Causes)</option>
+                                        {% for init in initiatives %}
+                                        <option value="{{ init.id }}">{{ init.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text small">Target cause details inserted via <code>{cause_title}</code> variable.</div>
+                                </div>
+                            </div>
+
+                            <!-- Preset Message Templates -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-dark d-block">Quick Message Templates</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill" onclick="applyBroadcastTemplate('general')">
+                                        <i class="fa-solid fa-hand-holding-heart me-1"></i> General & Zakat Appeal
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" onclick="applyBroadcastTemplate('widows')">
+                                        <i class="fa-solid fa-box-open me-1"></i> Widows Ration Kits
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" onclick="applyBroadcastTemplate('blood')">
+                                        <i class="fa-solid fa-droplet me-1"></i> Blood Donation Camp
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill" onclick="applyBroadcastTemplate('english')">
+                                        <i class="fa-solid fa-graduation-cap me-1"></i> Spoken English Coaching
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-dark">Personalized Message Body</label>
+                                <textarea name="custom_message" id="broadcastMessageBody" rows="7" class="form-control rounded-3 font-monospace small" placeholder="Write your appeal message here..." required>🙏 *Namaste / Assalamu Alaikum {donor_name} ji*,
+
+Greetings from *{{ TRUST_NAME }}* (Reg No: {{ TRUST_REGISTRATION_NO }}).
+
+We are reaching out regarding our critical humanitarian drive: *"{cause_title}"*.
+
+✨ *How your kind contribution helps:*
+• 100% grassroots transparent delivery in Harapanahalli
+• Instant 80G tax receipt for 50% income tax exemption
+
+💳 *Quick Direct UPI Donation:* `{upi_id}`
+🌐 *Online Razorpay / Card / NetBanking:* {link}
+
+May your generosity bring comfort and relief to those in need!
+
+With warm gratitude,
+Board of Trustees | *{{ TRUST_NAME }}*
+📞 {{ TRUST_PHONE }}</textarea>
+                                <div class="form-text small text-muted">
+                                    Dynamic variables: <code>{donor_name}</code> (donor's name), <code>{cause_title}</code> (initiative title), <code>{upi_id}</code> (trust UPI), <code>{link}</code> (donation page link).
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center pt-2">
+                                <span class="small text-muted"><i class="fa-solid fa-lock text-success me-1"></i> Messages are logged and dispatched through secure sandbox / WhatsApp Cloud API.</span>
+                                <button type="submit" class="btn btn-success rounded-pill px-4 py-2 fw-bold shadow-sm">
+                                    <i class="fa-brands fa-whatsapp me-1"></i> Queue & Dispatch Bulk Broadcast
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Recent Broadcast Dispatches Table -->
+                    <div class="card border-0 shadow-sm rounded-4 border bg-white">
+                        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list-check text-primary me-2"></i>Recent Dispatches & Outbox Queue</h6>
+                            <a href="{% url 'whatsapp_logs' %}" class="small text-primary text-decoration-none">View All 100 Logs &rarr;</a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 px-4">
+                                <thead class="table-light small">
+                                    <tr>
+                                        <th class="ps-4">Recipient</th>
+                                        <th>Notification Type</th>
+                                        <th>Message Preview</th>
+                                        <th>Status</th>
+                                        <th>Sent Time</th>
+                                        <th class="text-end pe-4">Direct WhatsApp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for notif in recent_broadcasts %}
+                                    <tr>
+                                        <td class="ps-4">
+                                            <strong class="text-dark">{{ notif.recipient_name }}</strong>
+                                            <div class="small text-muted font-monospace"><i class="fa-brands fa-whatsapp text-success me-1"></i>{{ notif.recipient_phone }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">{{ notif.get_notification_type_display }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="small text-muted" title="{{ notif.message_body }}">{{ notif.message_body|truncatechars:65 }}</span>
+                                        </td>
+                                        <td>
+                                            {% if notif.status == 'SENT' %}
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fa-solid fa-check me-1"></i>Sent</span>
+                                            {% elif notif.status == 'QUEUED' %}
+                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle"><i class="fa-solid fa-clock me-1"></i>Queued</span>
+                                            {% else %}
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="fa-solid fa-xmark me-1"></i>Failed</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="small text-muted">
+                                            {{ notif.created_at|date:"d M Y, H:i" }}
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            {% if notif.direct_wa_link %}
+                                            <a href="{{ notif.direct_wa_link }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1">
+                                                <i class="fa-brands fa-whatsapp me-1"></i> Open
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            No recent broadcasts dispatched yet.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -1363,6 +1557,21 @@ function openPhotoModalForInit(initId, initTitle) {
         }
         const modal = new bootstrap.Modal(modalEl);
         modal.show();
+    }
+}
+
+function applyBroadcastTemplate(key) {
+    const textarea = document.getElementById('broadcastMessageBody');
+    if (!textarea) return;
+
+    if (key === 'general') {
+        textarea.value = `🙏 *Namaste / Assalamu Alaikum {donor_name} ji*,\n\nGreetings from *{{ TRUST_NAME }}* (Reg No: {{ TRUST_REGISTRATION_NO }}).\n\nWe humbly present our community welfare activities and seek your kind support for *"{cause_title}"*.\n\n✨ *Key Ongoing Ground Impact:*\n• Free potable drinking water distribution across 17 circles\n• Daily bread & ration assistance for impoverished families\n• Medical screening & generic medicines at subsidized rates\n\n💳 *Quick Direct UPI:* \`{upi_id}\`\n🌐 *Online 80G Contribution:* {link}\n\nWith sincere prayers and warm regards,\nBoard of Trustees | *{{ TRUST_NAME }}*`;
+    } else if (key === 'widows') {
+        textarea.value = `🙏 *Respected {donor_name} ji*,\n\nGreetings from *{{ TRUST_NAME }}*.\n\nWe are organizing an urgent **Free Dry Ration Kit Distribution Drive** for vulnerable widows, destitute women, and needy families in Harapanahalli.\n\n📦 *Each Ration Kit contains:* 25kg Quality Rice, Wheat Flour, Cooking Oil, Toor Dal, and Essential Spices (Cost: ₹1,500/kit).\n\n🤝 *Sponsor 1 or more kits directly:*\n💳 *Direct UPI ID:* \`{upi_id}\`\n🌐 *Instant 80G Tax Exemption Link:* {link}\n\nYour compassion brings sustenance to hungry families!\n\nBoard of Trustees | *{{ TRUST_NAME }}*`;
+    } else if (key === 'blood') {
+        textarea.value = `🩸 *Urgent Appeal: Save Lives in Our Community!* 🩸\n\nDear *{donor_name}*,\n\nGreetings from *{{ TRUST_NAME }}*.\n\nIn collaboration with local government hospitals, we are organizing a **Voluntary Blood Donation & Free Grouping Camp**.\n\n📅 Support our upcoming medical camp to save emergency patients and road mishap victims.\n\n💳 Support logistics & refreshment packs via UPI: \`{upi_id}\`\n🌐 Donate online: {link}\n\nEvery drop counts. Every gift preserves a life!\n\nBoard of Trustees | *{{ TRUST_NAME }}*`;
+    } else if (key === 'english') {
+        textarea.value = `🎓 *Empower Underprivileged Youth with Modern Education* 🎓\n\nDear *{donor_name}*,\n\nGreetings from *{{ TRUST_NAME }}*.\n\nWe are expanding our **Free Spoken English, Communication & Digital Coaching** classes for students from poverty-stricken households in Harapanahalli.\n\n✨ *Your sponsorship covers study materials, coaching stipends, and interactive workshops.*\n\n💳 *Direct UPI:* \`{upi_id}\`\n🌐 *Contribute Online:* {link}\n\nGive youth the wings of education and career dignity!\n\nBoard of Trustees | *{{ TRUST_NAME }}*`;
     }
 }
 

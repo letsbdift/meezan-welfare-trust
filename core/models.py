@@ -193,6 +193,8 @@ class Donor(models.Model):
         ('ZAKAT_SADAQAH', 'Zakat & Sadaqah Contributor'),
         ('MONTHLY_PLEDGE', 'Monthly Sustaining Donor'),
         ('EMERGENCY_RELIEF', 'Emergency Relief Contributor'),
+        ('WIDOW_SUPPORT', 'Widows & Ration Kit Sponsor'),
+        ('HEALTH_EDUCATION', 'Health Camps & Student Coaching Sponsor'),
         ('CORPORATE_CSR', 'Corporate & CSR Partner'),
         ('HIGH_VALUE', 'High-Value / Major Patron'),
     ]
@@ -385,6 +387,8 @@ class WhatsAppNotification(models.Model):
         ('EVENT_ADVERTISEMENT', 'Event Advertisement & Invitation'),
         ('DONATION_RECEIPT', 'Donation Confirmation & Receipt'),
         ('GENERAL_UPDATE', 'General Trust Update & Newsletter'),
+        ('CAMPAIGN_APPEAL', 'Targeted Campaign Appeal'),
+        ('BULK_BROADCAST', 'Bulk Broadcast Outreach'),
     ]
 
     STATUS_CHOICES = [

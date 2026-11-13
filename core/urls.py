@@ -50,6 +50,8 @@ urlpatterns = [
     path('manage/donor/<int:pk>/delete/', views.delete_donor, name='donor_delete'),
     path('portal/donors/export/', views.export_donors_csv, name='export_donors_csv'),
     path('portal/donors/outreach/<int:donor_id>/', views.donor_outreach_message, name='donor_outreach'),
+    path('portal/broadcast/', views.bulk_broadcast, name='bulk_broadcast'),
+    path('portal/broadcast/remind-pending/', views.bulk_remind_pending_pledges, name='bulk_remind_pending'),
 
     # Progressive Web App (PWA) & Offline
     path('manifest.json', views.pwa_manifest, name='pwa_manifest'),

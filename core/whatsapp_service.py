@@ -10,9 +10,10 @@ logger = logging.getLogger(__name__)
 class WhatsAppService:
     def __init__(self):
         self.provider = getattr(settings, 'WHATSAPP_PROVIDER', 'mock')
-        self.trust_name = getattr(settings, 'TRUST_NAME', 'Aashraya Seva Charitable Trust')
-        self.trust_phone = getattr(settings, 'TRUST_PHONE', '+91 98200 12345')
-        self.trust_reg = getattr(settings, 'TRUST_REGISTRATION_NO', 'TRUST/MH/2018/80G/4491')
+        self.trust_name = getattr(settings, 'TRUST_NAME', 'Meezan Welfare and Charitable Trust')
+        self.trust_phone = getattr(settings, 'TRUST_PHONE', '+91 87222 11966')
+        self.trust_reg = getattr(settings, 'TRUST_REGISTRATION_NO', '4-00103-2025-26')
+        self.trust_upi = getattr(settings, 'TRUST_UPI_ID', '8722211966@sbi')
 
     def clean_phone(self, phone):
         """Standardize phone to international format without plus sign for wa.me."""
@@ -227,6 +228,45 @@ class WhatsAppService:
             notification_type='DONATION_RECEIPT',
             donation=donation,
             donor=donation.donor
+        )
+
+    def send_campaign_appeal(self, donor, initiative=None, custom_message="", base_url=""):
+        """
+        Sends an activity-targeted or general donation appeal to a donor with personalized greeting and payment details.
+        """
+        donor_name = donor.name if donor else "Respected Supporter"
+        cause_title = initiative.title if initiative else "Community Welfare and Needy Support Drives"
+        donate_url = f"{base_url}/donate/" if base_url else "https://meezantrust.in/donate/"
+
+        if custom_message:
+            message = custom_message.replace('{donor_name}', donor_name).replace('{name}', donor_name)
+            message = message.replace('{cause}', cause_title).replace('{cause_title}', cause_title)
+            message = message.replace('{upi_id}', self.trust_upi).replace('{link}', donate_url)
+        else:
+            message = (
+                f"🌟 *Namaste / Assalamu Alaikum {donor_name} ji*,\n\n"
+                f"Greetings from *{self.trust_name}* (Reg No: {self.trust_reg}).\n\n"
+                f"We are reaching out regarding our critical grassroots mission: *\"{cause_title}\"*.\n\n"
+                f"🤝 *Your kind generosity transforms lives on the ground:*\n"
+                f"• Clean drinking water, hospital screening, and free generic medicines\n"
+                f"• Spoken English & skill coaching for underserved youth\n"
+                f"• Monthly dry ration kits for widows and poverty-stricken families\n\n"
+                f"💳 *Quick Direct UPI Donation:* `{self.trust_upi}`\n"
+                f"🌐 *Online Razorpay / Card / NetBanking:* {donate_url}\n\n"
+                f"📄 *All contributions are 50% Tax Exempt under Section 80G.*\n\n"
+                f"May your kindness bring blessings and relief to many!\n\n"
+                f"With heartfelt regards,\n"
+                f"Board of Trustees\n"
+                f"*{self.trust_name}* | Harapanahalli\n"
+                f"📞 {self.trust_phone}"
+            )
+
+        return self.send_message(
+            phone=donor.phone,
+            message_text=message,
+            recipient_name=donor_name,
+            notification_type='CAMPAIGN_APPEAL',
+            donor=donor
         )
 
 

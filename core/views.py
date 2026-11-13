@@ -178,15 +178,34 @@ def dashboard(request):
                     expense_category_amounts.append(float(cat_sum))
                     expense_category_colors.append(cat.color_hex)
 
-    pending_donations = Donation.objects.filter(status='PENDING').order_by('-created_at')[:10]
-    recent_donations = Donation.objects.filter(status='SUCCESS').order_by('-created_at')[:10]
-    upcoming_events = Event.objects.filter(status='UPCOMING').order_by('event_date')
+    is_staff_view = request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser)
 
-    wa_stats = {
-        'total_sent': WhatsAppNotification.objects.filter(status='SENT').count(),
-        'reminders_sent': WhatsAppNotification.objects.filter(notification_type='PAYMENT_REMINDER').count(),
-        'ads_sent': WhatsAppNotification.objects.filter(notification_type='EVENT_ADVERTISEMENT').count(),
-    }
+    if is_staff_view:
+        pending_donations = Donation.objects.filter(status='PENDING').order_by('-created_at')[:10]
+        wa_stats = {
+            'total_sent': WhatsAppNotification.objects.filter(status='SENT').count(),
+            'reminders_sent': WhatsAppNotification.objects.filter(notification_type='PAYMENT_REMINDER').count(),
+            'ads_sent': WhatsAppNotification.objects.filter(notification_type='EVENT_ADVERTISEMENT').count(),
+        }
+    else:
+        pending_donations = []
+        wa_stats = None
+
+    recent_donations = list(Donation.objects.filter(status='SUCCESS').order_by('-created_at')[:10])
+    for d in recent_donations:
+        if is_staff_view:
+            d.display_donor_name = d.donor_name
+        else:
+            raw = (d.donor_name or "Anonymous Supporter").strip()
+            parts = raw.split()
+            if len(parts) >= 2:
+                d.display_donor_name = f"{parts[0][0]}*** {parts[-1][0]}."
+            elif len(parts) == 1 and len(parts[0]) > 2:
+                d.display_donor_name = f"{parts[0][:2]}***"
+            else:
+                d.display_donor_name = "Community Well-Wisher"
+
+    upcoming_events = Event.objects.filter(status='UPCOMING').order_by('event_date')
 
     context = {
         'metrics': metrics,
@@ -200,6 +219,7 @@ def dashboard(request):
         'expense_category_colors': json.dumps(expense_category_colors),
         'curr_month_name': datetime(2000, curr_month, 1).strftime('%B'),
         'curr_year': current_year,
+        'is_staff_view': is_staff_view,
         'pending_donations': pending_donations,
         'recent_donations': recent_donations,
         'upcoming_events': upcoming_events,
@@ -310,6 +330,7 @@ def admin_portal_view(request):
         'selected_donor_category': donor_filter_category,
         'selected_donor_activity': donor_filter_activity,
         'donor_search': donor_search,
+        'recent_broadcasts': WhatsAppNotification.objects.select_related('donor', 'event').all().order_by('-created_at')[:20],
     }
     return render(request, 'core/admin_portal.html', context)
 
@@ -800,12 +821,79 @@ def broadcast_event_whatsapp(request, event_id):
     return redirect(request.META.get('HTTP_REFERER', 'admin_portal'))
 
 
+@staff_required
 def whatsapp_logs(request):
-    """View log of all WhatsApp notifications sent, with direct wa.me fallback links."""
+    """View log of all WhatsApp notifications sent, with direct wa.me fallback links (Restricted to Staff/Admin)."""
     logs = WhatsAppNotification.objects.all().order_by('-created_at')[:100]
     return render(request, 'core/whatsapp_logs.html', {
         'logs': logs,
     })
+
+
+@staff_required
+def bulk_broadcast(request):
+    """
+    Staff / Trustee action: Dispatch bulk WhatsApp broadcast messages
+    to categorized donors or send bulk pledge payment reminders.
+    """
+    if request.method == 'POST':
+        broadcast_type = request.POST.get('broadcast_type', 'CAMPAIGN_APPEAL')
+        category = request.POST.get('category', '').strip()
+        initiative_id = request.POST.get('initiative_id', '').strip()
+        custom_message = request.POST.get('custom_message', '').strip()
+        
+        base_url = request.build_absolute_uri('/')[:-1]
+        
+        if broadcast_type == 'PAYMENT_REMINDERS':
+            pending_pledges = Donation.objects.filter(status='PENDING')
+            sent_count = 0
+            for pledge in pending_pledges:
+                if pledge.donor_phone:
+                    whatsapp_service.send_payment_reminder(pledge, base_url=base_url)
+                    sent_count += 1
+            messages.success(request, f"Dispatched {sent_count} automated WhatsApp payment reminders with direct Razorpay links.")
+            return redirect(f"{reverse('admin_portal')}#pledges")
+            
+        else:
+            donors = Donor.objects.filter(opt_in_whatsapp=True)
+            if category and category != 'ALL':
+                donors = donors.filter(category=category)
+            
+            target_init = None
+            if initiative_id:
+                target_init = Initiative.objects.filter(id=initiative_id).first()
+                if target_init and category == 'ACTIVITY_SPECIFIC':
+                    donors = donors.filter(interested_activities=target_init)
+            
+            sent_count = 0
+            for donor in donors:
+                if donor.phone:
+                    whatsapp_service.send_campaign_appeal(
+                        donor=donor,
+                        initiative=target_init,
+                        custom_message=custom_message,
+                        base_url=base_url
+                    )
+                    sent_count += 1
+                    
+            messages.success(request, f"Dispatched {sent_count} targeted WhatsApp broadcast messages successfully.")
+            return redirect(f"{reverse('admin_portal')}#broadcast")
+            
+    return redirect('admin_portal')
+
+
+@staff_required
+def bulk_remind_pending_pledges(request):
+    """One-click staff action to broadcast payment reminders to all pending pledges."""
+    pending_pledges = Donation.objects.filter(status='PENDING')
+    base_url = request.build_absolute_uri('/')[:-1]
+    sent_count = 0
+    for pledge in pending_pledges:
+        if pledge.donor_phone:
+            whatsapp_service.send_payment_reminder(pledge, base_url=base_url)
+            sent_count += 1
+    messages.success(request, f"Successfully dispatched {sent_count} WhatsApp payment reminders with Razorpay checkout links.")
+    return redirect(f"{reverse('admin_portal')}#pledges")
 
 
 # ---------------- Content Management Views (Restricted to Staff/Admin) ---------------- #
