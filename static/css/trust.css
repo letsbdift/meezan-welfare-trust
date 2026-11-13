@@ -96,10 +96,10 @@ main {
 /* Metric Cards */
 .metric-card {
     background: #ffffff;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 1.5rem;
-    border: 1px solid #e2e8f0;
-    box-shadow: var(--card-shadow);
+    border: 1.5px solid #1e293b;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
     transition: transform 0.2s, box-shadow 0.2s;
     height: 100%;
     position: relative;
@@ -107,7 +107,7 @@ main {
 }
 .metric-card:hover {
     transform: translateY(-3px);
-    box-shadow: var(--card-hover-shadow);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
 }
 .metric-card::before {
     content: '';
@@ -123,11 +123,11 @@ main {
 .metric-card.border-donors::before { background: #8b5cf6; }
 
 .metric-title {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #64748b;
-    font-weight: 600;
+    color: #475569;
+    font-weight: 700;
     margin-bottom: 0.4rem;
 }
 .metric-value {
@@ -146,13 +146,13 @@ main {
     font-size: 1.3rem;
 }
 
-/* Custom Cards */
+/* Custom Cards - High Polish & Crisp Dark Outline */
 .trust-card {
     background: #ffffff;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    box-shadow: var(--card-shadow);
-    transition: transform 0.2s, box-shadow 0.2s;
+    border-radius: 14px;
+    border: 1.5px solid #1e293b;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
     overflow: hidden;
     height: 100%;
     display: flex;
@@ -160,7 +160,8 @@ main {
 }
 .trust-card:hover {
     transform: translateY(-4px);
-    box-shadow: var(--card-hover-shadow);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    border-color: #0f172a;
 }
 .card-img-wrap {
     height: 200px;
@@ -207,8 +208,8 @@ main {
 .trustee-card {
     background: #ffffff;
     border-radius: 14px;
-    border: 1px solid #e2e8f0;
-    box-shadow: var(--card-shadow);
+    border: 1.5px solid #1e293b;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
     padding: 1.75rem 1.5rem;
     text-align: center;
     transition: all 0.25s;
@@ -219,8 +220,13 @@ main {
 }
 .trustee-card:hover {
     transform: translateY(-5px);
-    box-shadow: var(--card-hover-shadow);
-    border-color: #cbd5e1;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    border-color: #0f172a;
+}
+
+/* Card Crisp Outline System */
+.card {
+    border: 1.5px solid #1e293b;
 }
 .trustee-avatar-wrapper {
     width: 120px;
@@ -349,7 +355,7 @@ main {
 /* 80G Printable Receipt Styling */
 .receipt-container {
     background: #ffffff;
-    border: 2px solid #cbd5e1;
+    border: 2px solid #1e293b;
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.06);
     padding: 3rem;

@@ -9,9 +9,15 @@
     <div class="container position-relative" style="z-index: 2;">
         <div class="row align-items-center g-4">
             <div class="col-lg-7">
-                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold text-uppercase mb-3" style="font-size: 0.78rem;">
-                    <i class="fa-solid fa-hands-holding-circle text-success me-1"></i> Serving All Needy Individuals & Communities
-                </span>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <img src="/static/img/meezan_logo.jpg" alt="Meezan Welfare and Charitable Trust Official Logo" class="rounded shadow-lg border border-2 border-warning bg-white p-1" style="height: 68px; width: auto; max-width: 85px; object-fit: contain;">
+                    <div>
+                        <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold text-uppercase mb-1" style="font-size: 0.78rem;">
+                            <i class="fa-solid fa-hands-holding-circle text-success me-1"></i> Serving All Needy Individuals & Communities
+                        </span>
+                        <div class="text-white-50 small fw-semibold">Reg: {{ TRUST_REGISTRATION_NO }} &bull; Harapanahalli</div>
+                    </div>
+                </div>
                 <h1 class="hero-title mb-3">Meezan Welfare And Charitable Trust</h1>
                 <p class="hero-subtitle mb-4">
                     Dedicated to uplifting all needy individuals and communities with compassion, unity, and social responsibility. From providing affordable primary healthcare at Meezan Poly Clinic & Pharma and establishing the community Baitul Maal to distributing free summer water, ration kits, emergency blood donation, and promoting interfaith harmony.
@@ -166,11 +172,11 @@
             <div class="col-lg-4 col-md-6">
                 <div class="trust-card p-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fs-5 fw-bold" style="width: 44px; height: 44px;">
                             1
                         </div>
                         <div>
-                            <span class="badge bg-success-subtle text-success small mb-1">Communal Harmony</span>
+                            <span class="badge bg-light text-dark border small mb-1">Communal Harmony</span>
                             <h5 class="fw-bold text-dark mb-0">Iftar Koota Program</h5>
                         </div>
                     </div>
@@ -178,8 +184,8 @@
                         A special interfaith gathering during Ramadan inviting people from different religions to promote unity, mutual respect, and brotherhood in Harapanahalli.
                     </p>
                     <div class="border-top pt-3 d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark border">Ramadan Annual</span>
-                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-success rounded-pill fw-semibold">Support</a>
+                        <span class="badge bg-light text-secondary border">Ramadan Annual</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold">Support</a>
                     </div>
                 </div>
             </div>
@@ -188,11 +194,11 @@
             <div class="col-lg-4 col-md-6">
                 <div class="trust-card p-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fs-5 fw-bold" style="width: 44px; height: 44px;">
                             2
                         </div>
                         <div>
-                            <span class="badge bg-warning-subtle text-warning-emphasis small mb-1">Hunger Relief</span>
+                            <span class="badge bg-light text-dark border small mb-1">Hunger Relief</span>
                             <h5 class="fw-bold text-dark mb-0">Free Ration Kit Distribution</h5>
                         </div>
                     </div>
@@ -200,8 +206,8 @@
                         Providing essential monthly ration supplies (rice, flour, dal, cooking oil) to widows, orphans, disabled individuals, and struggling families in need.
                     </p>
                     <div class="border-top pt-3 d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark border">Monthly Drive</span>
-                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-warning text-dark rounded-pill fw-semibold">Support</a>
+                        <span class="badge bg-light text-secondary border">Monthly Drive</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold">Support</a>
                     </div>
                 </div>
             </div>
@@ -210,11 +216,11 @@
             <div class="col-lg-4 col-md-6">
                 <div class="trust-card p-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fs-5 fw-bold" style="width: 44px; height: 44px;">
                             3
                         </div>
                         <div>
-                            <span class="badge bg-primary-subtle text-primary small mb-1">Youth Empowerment</span>
+                            <span class="badge bg-light text-dark border small mb-1">Youth Empowerment</span>
                             <h5 class="fw-bold text-dark mb-0">Spoken English Classes</h5>
                         </div>
                     </div>
@@ -222,8 +228,8 @@
                         Helping local students and youth enhance their English communication, grammar, and interview skills to unlock better higher education and job opportunities.
                     </p>
                     <div class="border-top pt-3 d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark border">Ongoing Classes</span>
-                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-primary rounded-pill fw-semibold">Support</a>
+                        <span class="badge bg-light text-secondary border">Ongoing Classes</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold">Support</a>
                     </div>
                 </div>
             </div>
@@ -232,11 +238,11 @@
             <div class="col-lg-4 col-md-6">
                 <div class="trust-card p-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fs-5 fw-bold" style="width: 44px; height: 44px;">
                             4
                         </div>
                         <div>
-                            <span class="badge bg-danger-subtle text-danger small mb-1">Emergency Healthcare</span>
+                            <span class="badge bg-light text-dark border small mb-1">Emergency Healthcare</span>
                             <h5 class="fw-bold text-dark mb-0">Blood Donation Camp</h5>
                         </div>
                     </div>
@@ -244,8 +250,8 @@
                         Voluntary blood donation drives mobilizing youth to support medical emergencies, trauma care, and save lives in regional hospitals.
                     </p>
                     <div class="border-top pt-3 d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark border">Periodic Camps</span>
-                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-danger rounded-pill fw-semibold">Support</a>
+                        <span class="badge bg-light text-secondary border">Periodic Camps</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold">Support</a>
                     </div>
                 </div>
             </div>
@@ -254,11 +260,11 @@
             <div class="col-lg-4 col-md-6">
                 <div class="trust-card p-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fs-5 fw-bold" style="width: 44px; height: 44px;">
                             5
                         </div>
                         <div>
-                            <span class="badge bg-info-subtle text-info-emphasis small mb-1">Preventive Health</span>
+                            <span class="badge bg-light text-dark border small mb-1">Preventive Health</span>
                             <h5 class="fw-bold text-dark mb-0">Health & Screening Camp</h5>
                         </div>
                     </div>
@@ -266,8 +272,8 @@
                         Offering free general medical check-ups, blood pressure & glucose tests, free medicines, and raising vital awareness about community health and hygiene.
                     </p>
                     <div class="border-top pt-3 d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark border">Free Medical Checkup</span>
-                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-info rounded-pill fw-semibold">Support</a>
+                        <span class="badge bg-light text-secondary border">Free Medical Checkup</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold">Support</a>
                     </div>
                 </div>
             </div>
@@ -276,11 +282,11 @@
             <div class="col-lg-4 col-md-6">
                 <div class="trust-card p-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fs-5 fw-bold" style="width: 44px; height: 44px;">
                             6
                         </div>
                         <div>
-                            <span class="badge bg-secondary-subtle text-secondary small mb-1">Civic Sanitation</span>
+                            <span class="badge bg-light text-dark border small mb-1">Civic Sanitation</span>
                             <h5 class="fw-bold text-dark mb-0">City Cleaning Campaigns</h5>
                         </div>
                     </div>
@@ -288,21 +294,21 @@
                         Organizing waste disposal and cleanliness drives across public streets of Harapanahalli, especially during Eid festivals and community gatherings.
                     </p>
                     <div class="border-top pt-3 d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark border">Eid Sanitation</span>
-                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-secondary rounded-pill fw-semibold">Support</a>
+                        <span class="badge bg-light text-secondary border">Eid Sanitation</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold">Support</a>
                     </div>
                 </div>
             </div>
 
             <!-- 7. Free Drinking Water Distribution -->
             <div class="col-lg-4 col-md-6">
-                <div class="trust-card p-4 border-2 border-info">
+                <div class="trust-card p-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fs-5 fw-bold" style="width: 44px; height: 44px;">
                             7
                         </div>
                         <div>
-                            <span class="badge bg-info text-white small mb-1">15 Major Circles</span>
+                            <span class="badge bg-light text-dark border small mb-1">15 Major Circles</span>
                             <h5 class="fw-bold text-dark mb-0">Free Drinking Water</h5>
                         </div>
                     </div>
@@ -310,21 +316,21 @@
                         Supplying clean, chilled, and safe drinking water across <strong>15 major circles of Harapanahalli</strong> during hot summers for commuters, laborers, and pedestrians.
                     </p>
                     <div class="border-top pt-3 d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark border">Summer Relief Kiosks</span>
-                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-info rounded-pill fw-semibold">Support</a>
+                        <span class="badge bg-light text-secondary border">Summer Relief Kiosks</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold">Support</a>
                     </div>
                 </div>
             </div>
 
             <!-- 8. Meezan Poly Clinic & Meezan Pharma -->
             <div class="col-lg-4 col-md-6">
-                <div class="trust-card p-4 border-2 border-success">
+                <div class="trust-card p-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fs-5 fw-bold" style="width: 44px; height: 44px;">
                             8
                         </div>
                         <div>
-                            <span class="badge bg-success text-white small mb-1">Primary Care Center</span>
+                            <span class="badge bg-light text-dark border small mb-1">Primary Care Center</span>
                             <h5 class="fw-bold text-dark mb-0">Meezan Clinic & Pharma</h5>
                         </div>
                     </div>
@@ -332,21 +338,21 @@
                         Affordable primary healthcare facility and subsidized dispensary for the Harapanahalli community, ensuring no family suffers from lack of medicines.
                     </p>
                     <div class="border-top pt-3 d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark border">Permanent Facility</span>
-                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-success rounded-pill fw-semibold">Support</a>
+                        <span class="badge bg-light text-secondary border">Permanent Facility</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold">Support</a>
                     </div>
                 </div>
             </div>
 
             <!-- 9. Setting Up Baitul Maal for the City -->
             <div class="col-lg-4 col-md-6">
-                <div class="trust-card p-4 border-2 border-primary">
+                <div class="trust-card p-4">
                     <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                        <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fs-5 fw-bold" style="width: 44px; height: 44px;">
                             9
                         </div>
                         <div>
-                            <span class="badge bg-primary text-white small mb-1">City-Wide Treasury</span>
+                            <span class="badge bg-light text-dark border small mb-1">City-Wide Treasury</span>
                             <h5 class="fw-bold text-dark mb-0">Baitul Maal for Harapanahalli</h5>
                         </div>
                     </div>
@@ -354,8 +360,8 @@
                         Creating a structured, audited financial support system to collect Zakat & Sadaqah and assist poorest families with dignity, micro-grants, and 100% transparency.
                     </p>
                     <div class="border-top pt-3 d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark border">Zakat & Micro-Aid</span>
-                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-primary rounded-pill fw-semibold">Support</a>
+                        <span class="badge bg-light text-secondary border">Zakat & Micro-Aid</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-dark rounded-pill fw-semibold">Support</a>
                     </div>
                 </div>
             </div>

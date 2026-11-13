@@ -7,22 +7,25 @@
 <div class="container py-5">
     <!-- Header -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 border-bottom pb-4">
-        <div>
-            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
-                <i class="fa-solid fa-hand-holding-heart me-1"></i> Grassroots Missions
-            </span>
-            <h1 class="fw-bold text-dark mb-1">Our Charitable Initiatives</h1>
-            <p class="text-secondary mb-0">Explore our ongoing campaigns, track expected targets and raised funds, and contribute directly.</p>
+        <div class="d-flex align-items-center gap-3">
+            <img src="/static/img/meezan_logo.jpg" alt="Meezan Welfare and Charitable Trust Official Logo" class="rounded shadow-sm border border-2 border-success p-1 bg-white flex-shrink-0" style="height: 68px; width: auto; max-width: 85px; object-fit: contain;">
+            <div>
+                <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                    <i class="fa-solid fa-hand-holding-heart me-1"></i> Grassroots Missions
+                </span>
+                <h1 class="fw-bold text-dark mb-1">Our Charitable Initiatives & Activities</h1>
+                <p class="text-secondary mb-0">Explore our 9 core campaigns, track expected targets and raised funds, and contribute directly.</p>
+            </div>
         </div>
         <div class="d-flex gap-2">
             {% if user.is_authenticated and user.is_staff %}
             <a href="{% url 'admin_portal' %}#activities" class="btn btn-warning rounded-pill fw-bold text-dark">
                 <i class="fa-solid fa-gear me-1"></i> Portal Management
             </a>
-            {% endif %}
             <a href="{% url 'initiative_create' %}" class="btn btn-outline-primary rounded-pill fw-semibold">
                 <i class="fa-solid fa-plus me-1"></i> Upload Initiative
             </a>
+            {% endif %}
         </div>
     </div>
 
