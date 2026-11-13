@@ -14,11 +14,11 @@ from django.urls import reverse
 
 from .models import (
     Initiative, Event, Trustee, Donor, Donation,
-    MaintenanceActivity, MaintenanceExpense, WhatsAppNotification
+    MaintenanceActivity, MaintenanceExpense, WhatsAppNotification, ActivityPhoto
 )
 from .forms import (
     DonationForm, InitiativeForm, EventForm,
-    MaintenanceExpenseForm, TrusteeForm
+    MaintenanceExpenseForm, TrusteeForm, ActivityPhotoForm
 )
 from .razorpay_service import razorpay_service
 from .whatsapp_service import whatsapp_service
@@ -105,6 +105,7 @@ def home(request):
         'current_month_total': current_month_total,
         'current_month_name': timezone.now().strftime('%B %Y'),
         'recent_donors': recent_donors,
+        'activity_photos': ActivityPhoto.objects.select_related('initiative').all()[:6],
         'donation_form': DonationForm(),
     }
     return render(request, 'core/home.html', context)
@@ -200,6 +201,7 @@ def dashboard(request):
         'pending_donations': pending_donations,
         'recent_donations': recent_donations,
         'upcoming_events': upcoming_events,
+        'activity_photos': ActivityPhoto.objects.select_related('initiative').all()[:8],
         'wa_stats': wa_stats,
     }
     return render(request, 'core/dashboard.html', context)
@@ -267,6 +269,8 @@ def admin_portal_view(request):
         'trustees': trustees,
         'pending_donations': pending_donations,
         'recent_donations': recent_donations,
+        'activity_photos': ActivityPhoto.objects.select_related('initiative').all().order_by('-date_taken', '-created_at'),
+        'photo_form': ActivityPhotoForm(),
         'activities': MaintenanceActivity.objects.all(),
     }
     return render(request, 'core/admin_portal.html', context)
@@ -305,6 +309,7 @@ def initiatives_list(request):
         'categories': categories,
         'selected_category': category,
         'metrics': get_donation_metrics(),
+        'activity_photos': ActivityPhoto.objects.select_related('initiative').all().order_by('-date_taken', '-created_at')[:12],
     })
 
 
@@ -312,10 +317,12 @@ def initiative_detail(request, slug):
     """Detailed view of a single initiative with photo gallery, progress, and donation box."""
     initiative = get_object_or_404(Initiative, slug=slug)
     recent_donations = initiative.donations.filter(status='SUCCESS').order_by('-created_at')[:6]
+    photos = initiative.photos.all().order_by('-date_taken', '-created_at')
     form = DonationForm(initial={'initiative': initiative})
     return render(request, 'core/initiative_detail.html', {
         'initiative': initiative,
         'recent_donations': recent_donations,
+        'photos': photos,
         'form': form,
     })
 
@@ -839,3 +846,32 @@ def manage_trustee(request, pk=None):
         'title': 'Edit Trustee Profile' if pk else 'Add New Trustee',
         'subtitle': 'Manage board member profiles, biographical notes, and social media handles.',
     })
+
+
+@staff_required
+def manage_activity_photo(request, pk=None):
+    """Upload or edit an activity / field photo and write impact story details about it."""
+    photo = get_object_or_404(ActivityPhoto, pk=pk) if pk else None
+    if request.method == 'POST':
+        form = ActivityPhotoForm(request.POST, request.FILES, instance=photo)
+        if form.is_valid():
+            saved = form.save()
+            messages.success(request, f"Photo update '{saved.title}' published successfully! It is now live across the dashboard and activities pages.")
+            return redirect('admin_portal')
+    else:
+        form = ActivityPhotoForm(instance=photo)
+    return render(request, 'core/manage_form.html', {
+        'form': form,
+        'title': 'Edit Activity Photo & Story' if pk else 'Upload New Activity Photo & Story',
+        'subtitle': 'Upload field photographs of trust initiatives, camps, and drives and write impact stories about them.',
+    })
+
+
+@staff_required
+def delete_activity_photo(request, pk):
+    """Remove an activity photo update."""
+    photo = get_object_or_404(ActivityPhoto, pk=pk)
+    title = photo.title
+    photo.delete()
+    messages.info(request, f"Photo update '{title}' was removed.")
+    return redirect('admin_portal')

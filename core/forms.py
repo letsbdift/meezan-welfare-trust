@@ -1,5 +1,5 @@
 from django import forms
-from .models import Initiative, Event, Trustee, Donation, MaintenanceExpense, MaintenanceActivity, Donor
+from .models import Initiative, Event, Trustee, Donation, MaintenanceExpense, MaintenanceActivity, Donor, ActivityPhoto
 
 
 class DonationForm(forms.ModelForm):
@@ -97,4 +97,19 @@ class TrusteeForm(forms.ModelForm):
             'facebook_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://facebook.com/...'}),
             'instagram_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://instagram.com/...'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class ActivityPhotoForm(forms.ModelForm):
+    class Meta:
+        model = ActivityPhoto
+        fields = ['title', 'initiative', 'image', 'caption', 'location', 'date_taken', 'is_featured']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Free Ration Kit Distribution for Widows & Needy'}),
+            'initiative': forms.Select(attrs={'class': 'form-select'}),
+            'image': forms.FileInput(attrs={'class': 'form-control'}),
+            'caption': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Write details, impact notes, and describe what took place in this photo...'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Harapanahalli Circle 5, Vijayanagara'}),
+            'date_taken': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'is_featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

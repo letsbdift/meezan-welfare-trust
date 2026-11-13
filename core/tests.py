@@ -275,3 +275,49 @@ class MeezanTrustComprehensiveTestCase(TestCase):
         self.assertContains(res, 'Haji Abdul Sattar')
         self.assertContains(res, '50,000.00')
         self.assertContains(res, 'Meezan Welfare And Charitable Trust')
+
+    def test_activity_photo_management_and_display(self):
+        from core.models import ActivityPhoto
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        # Unauthenticated upload attempt should redirect to login
+        res = self.client.get(reverse('photo_create'))
+        self.assertEqual(res.status_code, 302)
+        self.assertIn(reverse('admin_login'), res.url)
+
+        # Login as staff user
+        self.client.login(username='trustee_admin', password='testpassword123')
+
+        # Create dummy image file for test upload
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x05\x04\x04'
+            b'\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44'
+            b'\x01\x00\x3b'
+        )
+        test_file = SimpleUploadedFile('test_camp.gif', small_gif, content_type='image/gif')
+
+        post_res = self.client.post(reverse('photo_create'), {
+            'title': 'Test Free Health Camp in Harapanahalli',
+            'initiative': self.initiative.id,
+            'image': test_file,
+            'caption': 'Volunteers conducting free health checkups and medicine distribution.',
+            'location': 'Harapanahalli Main Road',
+            'date_taken': '2026-11-13',
+            'is_featured': True
+        })
+        self.assertEqual(post_res.status_code, 302)
+
+        # Confirm photo exists in DB
+        photo = ActivityPhoto.objects.filter(title='Test Free Health Camp in Harapanahalli').first()
+        self.assertIsNotNone(photo)
+        self.assertEqual(photo.location, 'Harapanahalli Main Road')
+
+        # Confirm it renders on the dashboard, initiatives list, and home
+        dash_res = self.client.get(reverse('dashboard'))
+        self.assertContains(dash_res, 'Test Free Health Camp in Harapanahalli')
+
+        init_res = self.client.get(reverse('initiatives_list'))
+        self.assertContains(init_res, 'Test Free Health Camp in Harapanahalli')
+
+        home_res = self.client.get(reverse('home'))
+        self.assertContains(home_res, 'Test Free Health Camp in Harapanahalli')

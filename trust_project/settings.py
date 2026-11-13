@@ -97,13 +97,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Trust Details - Meezan Welfare And Charitable Trust Harapanahalli
 TRUST_NAME = os.getenv('TRUST_NAME', 'Meezan Welfare And Charitable Trust Harapanahalli')
 TRUST_SHORT_NAME = os.getenv('TRUST_SHORT_NAME', 'Meezan Welfare & Charitable Trust')
-TRUST_TAGLINE = os.getenv('TRUST_TAGLINE', 'Serving the community with compassion, unity, and social responsibility')
-TRUST_REGISTRATION_NO = os.getenv('TRUST_REGISTRATION_NO', 'MEEZAN/HPLI/TRUST/2021/80G')
+TRUST_KANNADA_NAME = 'ಮೀಜಾನ್ ವೆಲ್ಫೇರ್ ಅಂಡ್ ಚಾರಿಟಬಲ್ ಟ್ರಸ್ಟ್ (ರಿ)'
+TRUST_TAGLINE = os.getenv('TRUST_TAGLINE', 'Serving all needy individuals and communities with compassion, unity, and social responsibility')
+TRUST_REGISTRATION_NO = os.getenv('TRUST_REGISTRATION_NO', '4-00103-2025-26')
 TRUST_PAN = os.getenv('TRUST_PAN', 'AAATM9981K')
 TRUST_PHONE = os.getenv('TRUST_PHONE', '+91 87222 11966')
 TRUST_WHATSAPP_NUMBER = os.getenv('TRUST_WHATSAPP_NUMBER', '+918722211966')
 TRUST_EMAIL = os.getenv('TRUST_EMAIL', 'meezantrust.hpli@gmail.com')
-TRUST_ADDRESS = os.getenv('TRUST_ADDRESS', 'Meezan Welfare and Charitable Trust, Main Road, Harapanahalli - 583131, Vijayanagara Dist, Karnataka')
+TRUST_ADDRESS = os.getenv('TRUST_ADDRESS', 'Meezan Welfare and Charitable Trust, Harapanahalli, Vijayanagara Dist, Karnataka - 583131')
+TRUST_LOGO_URL = '/static/img/meezan_logo.jpg'
 
 # Official Banking & Direct UPI Information
 TRUST_BANK_NAME = 'State Bank of India (SBI)'

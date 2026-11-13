@@ -78,6 +78,33 @@ class Initiative(models.Model):
         return reverse('initiative_detail', kwargs={'slug': self.slug})
 
 
+class ActivityPhoto(models.Model):
+    title = models.CharField(max_length=200, help_text="Photo title or activity headline")
+    initiative = models.ForeignKey(
+        Initiative,
+        on_delete=models.CASCADE,
+        related_name='photos',
+        blank=True,
+        null=True,
+        help_text="Related initiative / activity (leave blank for general)"
+    )
+    image = models.ImageField(upload_to='activity_photos/', help_text="Field / event photo")
+    caption = models.TextField(help_text="Write details / caption / impact story about this photo")
+    location = models.CharField(max_length=200, default='Harapanahalli', blank=True, help_text="Location / circle where photo was taken")
+    date_taken = models.DateField(default=timezone.now, help_text="Date the activity was conducted")
+    is_featured = models.BooleanField(default=True, help_text="Show in home & dashboard photo highlights")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date_taken', '-created_at']
+        verbose_name = "Activity Photo & Update"
+        verbose_name_plural = "Activity Photos & Updates"
+
+    def __str__(self):
+        return f"{self.title} ({self.initiative.title if self.initiative else 'General'})"
+
+
 class Event(models.Model):
     STATUS_CHOICES = [
         ('UPCOMING', 'Upcoming'),

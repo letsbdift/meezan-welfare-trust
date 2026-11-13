@@ -93,5 +93,68 @@
         </div>
         {% endfor %}
     </div>
+
+    <!-- FIELD ACTIVITY PHOTO GALLERY & IMPACT STORIES (ACTIVITIES TAB) -->
+    <div class="mt-5 pt-4 border-top">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-2">
+            <div>
+                <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                    <i class="fa-solid fa-camera-retro me-1"></i> Ground Impact & Photographic Evidence
+                </span>
+                <h3 class="fw-bold text-dark mb-1">Field Activity Documentation & Impact Stories</h3>
+                <p class="text-secondary mb-0">Real photos and updates from recent food distribution drives, education sessions, and blood donation camps.</p>
+            </div>
+            {% if user.is_authenticated and user.is_staff %}
+            <a href="{% url 'photo_create' %}" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                <i class="fa-solid fa-cloud-arrow-up me-1"></i> Add New Image & Story
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="row g-4">
+            {% for photo in activity_photos %}
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                    <div class="position-relative">
+                        {% if photo.image %}
+                        <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="card-img-top" style="height: 240px; object-fit: cover;">
+                        {% endif %}
+                        {% if photo.initiative %}
+                        <span class="position-absolute top-0 start-0 m-3 badge bg-dark bg-opacity-75 text-white">
+                            {{ photo.initiative.title|truncatechars:30 }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-4 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-center text-muted small mb-2">
+                            <span><i class="fa-regular fa-calendar me-1"></i> {{ photo.date_taken|date:"d M Y" }}</span>
+                            <span><i class="fa-solid fa-location-dot text-danger me-1"></i> {{ photo.location }}</span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-2">{{ photo.title }}</h5>
+                        <p class="text-secondary small flex-grow-1 mb-3" style="line-height: 1.5;">
+                            {{ photo.caption }}
+                        </p>
+                        {% if photo.initiative %}
+                        <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                            <a href="{{ photo.initiative.get_absolute_url }}" class="small text-success fw-bold text-decoration-none">
+                                View Campaign Details &rarr;
+                            </a>
+                            {% if user.is_authenticated and user.is_staff %}
+                            <a href="{% url 'photo_edit' photo.id %}" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" title="Edit story">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-4 text-muted">
+                No activity photos uploaded yet.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 {% endblock %}

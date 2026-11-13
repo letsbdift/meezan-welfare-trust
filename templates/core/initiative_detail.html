@@ -55,6 +55,30 @@
                         </div>
                     </div>
 
+                    <!-- Real Field Photos & Impact Gallery for this Initiative -->
+                    {% if photos %}
+                    <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-camera-retro text-success me-2"></i>Field Photos & Ground Updates</h5>
+                    <div class="row g-3 mb-4">
+                        {% for p in photos %}
+                        <div class="col-md-6">
+                            <div class="card h-100 border rounded-4 overflow-hidden shadow-sm">
+                                <img src="{{ p.image.url }}" alt="{{ p.title }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between text-muted small mb-1" style="font-size: 0.75rem;">
+                                        <span><i class="fa-regular fa-calendar me-1"></i>{{ p.date_taken|date:"d M Y" }}</span>
+                                        <span><i class="fa-solid fa-location-dot me-1 text-danger"></i>{{ p.location }}</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1 small">{{ p.title }}</h6>
+                                    <p class="text-secondary small mb-0" style="font-size: 0.8rem; line-height: 1.4;">
+                                        {{ p.caption }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
                     <!-- Verified Backers / Recent Donors -->
                     <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-users text-success me-2"></i>Recent Mission Backers</h5>
                     <div class="list-group list-group-flush border rounded-3 overflow-hidden">

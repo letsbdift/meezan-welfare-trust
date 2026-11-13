@@ -97,6 +97,11 @@
                         <i class="fa-solid fa-envelope-open-text text-danger me-1"></i> Pending Pledges ({{ pending_donations.count }})
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 fw-bold text-dark border-0" id="photos-tab" data-bs-toggle="tab" data-bs-target="#photos" type="button" role="tab">
+                        <i class="fa-solid fa-camera-retro text-success me-1"></i> Field Photos & Stories ({{ activity_photos.count }})
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -496,6 +501,135 @@
                                 {% endfor %}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- 7. FIELD PHOTOS & ACTIVITY STORIES -->
+                <div class="tab-pane fade" id="photos" role="tabpanel">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">Activity Field Photos & Impact Stories</h5>
+                            <p class="text-muted small mb-0">Upload real photos from distribution drives, camps, and workshops. Write what took place; it automatically publishes to the dashboard, activities tab, and home page.</p>
+                        </div>
+                        <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal">
+                            <i class="fa-solid fa-cloud-arrow-up me-2"></i> Add Image & Story
+                        </button>
+                    </div>
+
+                    <!-- Upload Photo Modal -->
+                    <div class="modal fade" id="uploadPhotoModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content rounded-4 border-0 shadow-lg">
+                                <form action="{% url 'photo_create' %}" method="POST" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <div class="modal-header text-white" style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%);">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fa-solid fa-camera-retro fs-5 text-warning"></i>
+                                            <h5 class="modal-title fw-bold mb-0">Upload Activity Photo & Write Story</h5>
+                                        </div>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-4 text-start">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold small text-dark">Activity Headline / Photo Title *</label>
+                                            <input type="text" name="title" class="form-control form-control-lg rounded-3 fs-6" placeholder="e.g. Free Ration Kit Distribution for Widows & Needy Families" required>
+                                        </div>
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-7">
+                                                <label class="form-label fw-bold small text-dark">Related Activity / Initiative</label>
+                                                <select name="initiative" class="form-select rounded-3">
+                                                    <option value="">General Community Welfare</option>
+                                                    {% for init in initiatives %}
+                                                    <option value="{{ init.id }}">{{ init.title }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label fw-bold small text-dark">Date of Activity</label>
+                                                <input type="date" name="date_taken" class="form-control rounded-3" value="{% now 'Y-m-d' %}">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold small text-dark">Select Image File * (JPG, PNG)</label>
+                                            <input type="file" name="image" class="form-control form-control-lg rounded-3" accept="image/*" required>
+                                            <div class="form-text small">Upload an authentic high-resolution photograph from the camp or field drive.</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold small text-dark">Write Something About It (Story / Details / Beneficiaries) *</label>
+                                            <textarea name="caption" rows="4" class="form-control rounded-3" placeholder="Describe what took place: items distributed, venue, who benefited, volunteer participation, and trust impact..." required></textarea>
+                                        </div>
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-7">
+                                                <label class="form-label fw-bold small text-dark">Location / Venue</label>
+                                                <input type="text" name="location" class="form-control rounded-3" placeholder="e.g. Harapanahalli Circle 5, Vijayanagara Dist">
+                                            </div>
+                                            <div class="col-md-5 d-flex align-items-end">
+                                                <div class="form-check form-switch mb-2">
+                                                    <input class="form-check-input" type="checkbox" name="is_featured" id="featuredCheck" checked>
+                                                    <label class="form-check-label fw-bold text-dark small" for="featuredCheck">
+                                                        Highlight on Home & Dashboard
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer bg-light p-3">
+                                        <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                                            <i class="fa-solid fa-check me-1"></i> Publish Field Update
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Photos Grid Display -->
+                    <div class="row g-4">
+                        {% for photo in activity_photos %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border rounded-4 shadow-sm overflow-hidden bg-white">
+                                <div class="position-relative">
+                                    {% if photo.image %}
+                                    <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="card-img-top" style="height: 220px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="bg-light text-center py-5"><i class="fa-solid fa-image text-muted fa-3x"></i></div>
+                                    {% endif %}
+                                    {% if photo.initiative %}
+                                    <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white small">
+                                        {{ photo.initiative.title|truncatechars:28 }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-center text-muted small mb-2">
+                                        <span><i class="fa-regular fa-calendar me-1"></i> {{ photo.date_taken|date:"d M Y" }}</span>
+                                        <span><i class="fa-solid fa-location-dot me-1"></i> {{ photo.location|truncatechars:18 }}</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-2">{{ photo.title }}</h6>
+                                    <p class="text-secondary small flex-grow-1 mb-3" style="line-height: 1.45;">
+                                        {{ photo.caption }}
+                                    </p>
+                                    <div class="border-top pt-2 d-flex justify-content-between align-items-center">
+                                        <a href="{% url 'photo_edit' photo.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit
+                                        </a>
+                                        <a href="{% url 'photo_delete' photo.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="return confirm('Are you sure you want to remove this photo update?');">
+                                            <i class="fa-solid fa-trash me-1"></i> Delete
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-5 text-muted">
+                            <i class="fa-solid fa-camera-retro fa-3x mb-3 text-success opacity-50"></i>
+                            <p class="mb-2">No activity photos uploaded yet.</p>
+                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal">
+                                Upload First Activity Photo & Story
+                            </button>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
 

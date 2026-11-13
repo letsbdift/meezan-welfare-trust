@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import (
     Initiative, Event, Trustee, Donor, Donation,
-    MaintenanceActivity, MaintenanceExpense, WhatsAppNotification
+    MaintenanceActivity, MaintenanceExpense, WhatsAppNotification, ActivityPhoto
 )
 
 
@@ -84,3 +84,10 @@ class WhatsAppNotificationAdmin(admin.ModelAdmin):
     list_filter = ('notification_type', 'status', 'created_at')
     search_fields = ('recipient_name', 'recipient_phone', 'message_body')
     readonly_fields = ('direct_wa_link',)
+
+
+@admin.register(ActivityPhoto)
+class ActivityPhotoAdmin(admin.ModelAdmin):
+    list_display = ('title', 'initiative', 'location', 'date_taken', 'is_featured', 'created_at')
+    list_filter = ('initiative', 'is_featured', 'date_taken')
+    search_fields = ('title', 'caption', 'location')

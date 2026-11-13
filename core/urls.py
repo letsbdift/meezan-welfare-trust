@@ -39,4 +39,7 @@ urlpatterns = [
     path('manage/expense/<int:pk>/edit/', views.manage_expense, name='expense_edit'),
     path('manage/trustee/new/', views.manage_trustee, name='trustee_create'),
     path('manage/trustee/<int:pk>/edit/', views.manage_trustee, name='trustee_edit'),
+    path('manage/photo/new/', views.manage_activity_photo, name='photo_create'),
+    path('manage/photo/<int:pk>/edit/', views.manage_activity_photo, name='photo_edit'),
+    path('manage/photo/<int:pk>/delete/', views.delete_activity_photo, name='photo_delete'),
 ]
