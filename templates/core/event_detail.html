@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ event.title }} | {{ TRUST_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events_list' %}">Events</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ event.title|truncatechars:40 }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                {% if event.image %}
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-100" style="max-height: 380px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="badge bg-success-subtle text-success mb-2 px-3 py-1 rounded-pill">{{ event.get_status_display }}</span>
+                            <h2 class="fw-bold text-dark mb-0">{{ event.title }}</h2>
+                        </div>
+                        <a href="{% url 'event_edit' event.id %}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit
+                        </a>
+                    </div>
+
+                    <div class="row g-3 py-3 my-3 bg-light rounded-3 border">
+                        <div class="col-md-6">
+                            <span class="text-muted small d-block"><i class="fa-regular fa-calendar text-primary me-2"></i>Date & Time:</span>
+                            <strong class="text-dark">{{ event.event_date|date:"l, d F Y, h:i A" }}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-muted small d-block"><i class="fa-solid fa-location-dot text-danger me-2"></i>Venue / Location:</span>
+                            <strong class="text-dark">{{ event.location }}</strong>
+                        </div>
+                        {% if event.contact_person %}
+                        <div class="col-md-6">
+                            <span class="text-muted small d-block"><i class="fa-solid fa-user text-info me-2"></i>Event Coordinator:</span>
+                            <strong class="text-dark">{{ event.contact_person }}</strong>
+                        </div>
+                        {% endif %}
+                        {% if event.contact_phone %}
+                        <div class="col-md-6">
+                            <span class="text-muted small d-block"><i class="fa-brands fa-whatsapp text-success me-2"></i>Contact Phone:</span>
+                            <strong class="text-dark">{{ event.contact_phone }}</strong>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-circle-info text-primary me-2"></i>About the Event & Agenda</h5>
+                    <div class="text-secondary leading-relaxed mb-4">
+                        {{ event.description|linebreaks }}
+                    </div>
+
+                    <!-- Trustee Admin Action: Broadcast to Donors via WhatsApp -->
+                    <div class="p-4 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-4 mt-4">
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                            <div>
+                                <h6 class="fw-bold text-success mb-1">
+                                    <i class="fa-brands fa-whatsapp fs-5 me-1"></i> Automated WhatsApp Broadcast
+                                </h6>
+                                <p class="text-muted small mb-0">
+                                    Send personalized event invitations & advertisements to all {{ donors_count }} registered donors instantly.
+                                </p>
+                            </div>
+                            <a href="{% url 'broadcast_event_whatsapp' event.id %}" class="btn btn-success fw-bold rounded-pill px-4" onclick="return confirm('Broadcast WhatsApp invitation for this event to all registered donors?')">
+                                Broadcast Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 100px;">
+                <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-ticket text-primary me-2"></i>RSVP & Attend</h5>
+                <p class="text-muted small mb-3">Admission is complimentary for all donors, volunteers, and supporters. Please confirm your participation.</p>
+
+                <div class="p-3 bg-light rounded-3 border mb-3 text-center">
+                    <span class="text-muted small d-block">Expected Attendance</span>
+                    <div class="display-6 fw-bold text-primary">{{ event.capacity }}</div>
+                    <span class="small text-muted">Seats / Registrations</span>
+                </div>
+
+                <div class="d-grid gap-2 mb-3">
+                    <a href="https://wa.me/{{ event.contact_phone|default:TRUST_WHATSAPP_NUMBER|cut:' '|cut:'+' }}?text=Hello,%20I%20would%20like%20to%20RSVP%20for%20{{ event.title|urlencode }}" target="_blank" class="btn btn-whatsapp fw-bold py-2 rounded-pill">
+                        <i class="fa-brands fa-whatsapp me-2"></i> RSVP via WhatsApp
+                    </a>
+                </div>
+
+                <div class="border-top pt-3 text-center">
+                    <span class="small text-muted d-block mb-2">Invite Friends on WhatsApp:</span>
+                    <a href="https://wa.me/?text=Check%20out%20this%20upcoming%20event%20by%20{{ TRUST_NAME|urlencode }}:%20{{ event.title|urlencode }}%20on%20{{ event.event_date|date:'d M Y'|urlencode }}%20-%20Details:%20{{ request.build_absolute_uri }}" target="_blank" class="btn btn-outline-secondary btn-sm rounded-pill w-100">
+                        <i class="fa-solid fa-share-nodes me-1"></i> Share Event Link
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

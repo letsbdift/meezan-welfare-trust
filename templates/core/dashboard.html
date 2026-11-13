@@ -1,0 +1,459 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Dynamic Donation & Trust Metrics Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header with Quick Action Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 border-bottom pb-3">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary px-3 py-1 rounded-pill"><i class="fa-solid fa-satellite-dish me-1"></i> Live Metrics Hub</span>
+                <span class="badge bg-success px-3 py-1 rounded-pill"><i class="fa-brands fa-whatsapp me-1"></i> WhatsApp Engine Online</span>
+            </div>
+            <h2 class="fw-bold text-dark mt-2 mb-1">Charitable Trust Dynamics Dashboard</h2>
+            <p class="text-secondary small mb-0">Real-time donation tracking, expected targets vs raised amounts, pending pledge alerts, and WhatsApp outreach analytics.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'initiative_create' %}" class="btn btn-outline-primary btn-sm rounded-pill fw-semibold">
+                <i class="fa-solid fa-plus me-1"></i> New Initiative
+            </a>
+            <a href="{% url 'event_create' %}" class="btn btn-outline-primary btn-sm rounded-pill fw-semibold">
+                <i class="fa-solid fa-calendar-plus me-1"></i> New Event
+            </a>
+            <a href="{% url 'expense_create' %}" class="btn btn-outline-secondary btn-sm rounded-pill fw-semibold">
+                <i class="fa-solid fa-receipt me-1"></i> Log Expense
+            </a>
+            <button type="button" class="btn btn-success btn-sm rounded-pill fw-semibold" data-bs-toggle="modal" data-bs-target="#broadcastEventModal">
+                <i class="fa-brands fa-whatsapp me-1"></i> Broadcast Event
+            </button>
+        </div>
+    </div>
+
+    <!-- PRIMARY DONATION METRICS CARDS: Expected, Raised, and Pending -->
+    <div class="row g-3 mb-4">
+        <!-- Expected Amount -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card border-expected">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="metric-title text-primary"><i class="fa-solid fa-bullseye me-1"></i> Expected Amount</div>
+                        <div class="metric-value">₹{{ metrics.total_expected|floatformat:2|intcomma }}</div>
+                        <div class="small text-muted mt-2">Active targets + pending pledges</div>
+                    </div>
+                    <div class="metric-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Raised Amount -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card border-raised">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="metric-title text-success"><i class="fa-solid fa-hand-holding-dollar me-1"></i> Raised Amount</div>
+                        <div class="metric-value text-success">₹{{ metrics.total_raised|floatformat:2|intcomma }}</div>
+                        <div class="small text-muted mt-2">
+                            <span class="text-success fw-bold"><i class="fa-solid fa-arrow-trend-up"></i> {{ metrics.progress_percentage }}%</span> of goal reached
+                        </div>
+                    </div>
+                    <div class="metric-icon bg-success bg-opacity-10 text-success">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Amount -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card border-pending">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="metric-title text-warning"><i class="fa-solid fa-clock me-1"></i> Pending Amount</div>
+                        <div class="metric-value text-warning">₹{{ metrics.total_pending|floatformat:2|intcomma }}</div>
+                        <div class="small text-muted mt-2">
+                            ₹{{ metrics.pending_pledges|floatformat:2|intcomma }} in pledged donations
+                        </div>
+                    </div>
+                    <div class="metric-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Donors & WhatsApp Dispatches -->
+        <div class="col-xl-3 col-md-6">
+            <div class="metric-card border-donors">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="metric-title text-purple"><i class="fa-solid fa-users me-1"></i> Donors & WhatsApp</div>
+                        <div class="metric-value text-purple">{{ metrics.donor_count }} Donors</div>
+                        <div class="small text-muted mt-2">
+                            <span class="text-success fw-bold"><i class="fa-brands fa-whatsapp"></i> {{ wa_stats.total_sent }}</span> notifications delivered
+                        </div>
+                    </div>
+                    <div class="metric-icon bg-info bg-opacity-10 text-info">
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHARTS SECTION: Analytics & Trends -->
+    <div class="row g-4 mb-4">
+        <!-- Chart 1: Target vs Raised vs Pending Comparison -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Fund Fulfillment Ratio</h6>
+                        <span class="badge bg-primary bg-opacity-10 text-primary">Overview</span>
+                    </div>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="ratioChart"></canvas>
+                    </div>
+                    <div class="mt-3 pt-3 border-top d-flex justify-content-around text-center small">
+                        <div>
+                            <span class="text-muted d-block">Raised</span>
+                            <strong class="text-success">₹{{ metrics.total_raised|floatformat:0|intcomma }}</strong>
+                        </div>
+                        <div>
+                            <span class="text-muted d-block">Pending</span>
+                            <strong class="text-warning">₹{{ metrics.total_pending|floatformat:0|intcomma }}</strong>
+                        </div>
+                        <div>
+                            <span class="text-muted d-block">Target</span>
+                            <strong class="text-primary">₹{{ metrics.total_expected|floatformat:0|intcomma }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 2: 2026 Monthly Donation Influx Trend -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-chart-line text-success me-2"></i>Donation Growth (2026 Monthly)</h6>
+                        <span class="badge bg-success bg-opacity-10 text-success">Verified Inflow</span>
+                    </div>
+                    <div style="height: 250px;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    <p class="text-muted small text-center mb-0 mt-2">Cumulative verified donations received via Razorpay & Bank Transfers.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart 3: Monthly Maintenance Cost Breakdown by Activity -->
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-receipt text-danger me-2"></i>{{ curr_month_name }} Costs</h6>
+                        <a href="{% url 'maintenance_costs' %}" class="small text-primary text-decoration-none">Audit &rarr;</a>
+                    </div>
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                    <p class="text-muted small text-center mb-0 mt-2">Operational breakdown across 7 primary trust activities.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PENDING PLEDGES & WHATSAPP REMINDERS AUTOMATION SECTION -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold mb-1 text-dark">
+                    <i class="fa-brands fa-whatsapp text-success me-2 fs-5"></i>
+                    Pending Pledges & Automated WhatsApp Reminders
+                </h5>
+                <p class="text-muted small mb-0">Follow up on committed contributions with personalized WhatsApp reminders including direct RazorPay payment links.</p>
+            </div>
+            <a href="{% url 'whatsapp_logs' %}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i> View Dispatch Logs
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 px-4">
+                <thead class="table-light small text-uppercase text-secondary">
+                    <tr>
+                        <th class="ps-4">Donor Name & Contact</th>
+                        <th>Target Cause / Initiative</th>
+                        <th>Pledged Amount</th>
+                        <th>Due Date</th>
+                        <th>Payment Link</th>
+                        <th class="text-end pe-4">Automated WhatsApp Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pending_donations %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ p.donor_name }}</div>
+                            <div class="small text-muted">
+                                <i class="fa-brands fa-whatsapp text-success me-1"></i>{{ p.donor_phone }}
+                                {% if p.donor_email %}&bull; {{ p.donor_email }}{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if p.initiative %}
+                                <span class="badge bg-light text-dark border">{{ p.initiative.title|truncatechars:35 }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-secondary border">General Trust Fund</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong class="text-warning fs-6">₹{{ p.amount|floatformat:2|intcomma }}</strong>
+                        </td>
+                        <td>
+                            {% if p.pledge_due_date %}
+                                <span class="badge bg-secondary-subtle text-secondary">{{ p.pledge_due_date|date:"d M Y" }}</span>
+                            {% else %}
+                                <span class="text-muted small">Immediate</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.razorpay_payment_link %}
+                                <a href="{{ p.razorpay_payment_link }}" target="_blank" class="small text-primary text-decoration-none" title="Open Razorpay Link">
+                                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> RazorPay Link
+                                </a>
+                            {% else %}
+                                <span class="text-muted small">Auto-generated</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="d-inline-flex gap-1">
+                                <!-- Automated Backend WhatsApp Dispatch Button -->
+                                <a href="{% url 'send_whatsapp_reminder' p.id %}" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm" title="Dispatch Automated WhatsApp Reminder with Razorpay Link">
+                                    <i class="fa-brands fa-whatsapp me-1"></i> Send Reminder
+                                </a>
+                                <!-- Quick Direct Web Click-to-Chat fallback link -->
+                                <a href="https://wa.me/{{ p.donor_phone }}?text=Namaste%20{{ p.donor_name|urlencode }}%20ji,%20greetings%20from%20{{ TRUST_NAME|urlencode }}.%20Kindly%20find%20your%20pledge%20payment%20link:%20{{ p.razorpay_payment_link|urlencode }}" target="_blank" class="btn btn-outline-secondary btn-sm rounded-pill" title="Open direct in WhatsApp Web/App">
+                                    <i class="fa-solid fa-up-right-from-square"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="fa-solid fa-circle-check text-success fs-3 mb-2 d-block"></i>
+                            No pending pledges at this time! All active pledges have been collected.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- INITIATIVES BREAKDOWN & RECENT DONATIONS -->
+    <div class="row g-4">
+        <!-- Initiatives Target vs Raised Breakdown -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-hand-holding-heart text-primary me-2"></i>Initiatives Goal Performance</h6>
+                    <a href="{% url 'initiatives_list' %}" class="small text-primary text-decoration-none">All Causes &rarr;</a>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column gap-4">
+                        {% for init in initiatives %}
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div>
+                                    <a href="{{ init.get_absolute_url }}" class="fw-bold text-dark text-decoration-none">{{ init.title }}</a>
+                                    <span class="badge bg-light text-secondary border ms-2 small">{{ init.get_category_display }}</span>
+                                </div>
+                                <span class="fw-bold text-primary">{{ init.progress_percentage }}%</span>
+                            </div>
+                            <div class="progress-trust my-2">
+                                <div class="progress-bar" style="width: {{ init.progress_percentage }}%;"></div>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>Raised: <strong class="text-success">₹{{ init.total_raised|floatformat:0|intcomma }}</strong></span>
+                                <span>Pending: <strong class="text-warning">₹{{ init.pending_amount|floatformat:0|intcomma }}</strong></span>
+                                <span>Target: <strong class="text-dark">₹{{ init.target_amount|floatformat:0|intcomma }}</strong></span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted text-center py-3">No initiatives created yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Completed Donations Feed -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-receipt text-success me-2"></i>Recent Verified Donations</h6>
+                    <span class="badge bg-success bg-opacity-10 text-success">Real-Time Feed</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for d in recent_donations %}
+                        <div class="list-group-item px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold text-dark">{{ d.donor_name }}</div>
+                                <div class="small text-muted">
+                                    {{ d.initiative.title|default:"General Trust Fund"|truncatechars:28 }}
+                                    <span class="mx-1">&bull;</span> {{ d.created_at|date:"d M, H:i" }}
+                                </div>
+                                {% if d.receipt_number %}
+                                <a href="{% url 'receipt_detail' d.receipt_number %}" class="small text-primary text-decoration-none">
+                                    <i class="fa-solid fa-file-invoice text-primary me-1"></i> 80G Receipt: {{ d.receipt_number }}
+                                </a>
+                                {% endif %}
+                            </div>
+                            <div class="text-end">
+                                <span class="fw-bold text-success fs-6">+₹{{ d.amount|floatformat:2|intcomma }}</span>
+                                <span class="d-block badge bg-success-subtle text-success small mt-1">Verified</span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="p-4 text-center text-muted">No donations recorded yet.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Broadcast Event Advertisement to Donors via WhatsApp -->
+<div class="modal fade" id="broadcastEventModal" tabindex="-1" aria-labelledby="broadcastModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom bg-light">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-success text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fa-brands fa-whatsapp"></i>
+                    </div>
+                    <h5 class="modal-title fw-bold mb-0" id="broadcastModalLabel">Broadcast Event to Donors</h5>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-secondary small mb-3">
+                    Select an upcoming event to broadcast attractive WhatsApp invitations & advertisements to all {{ metrics.donor_count }} registered trust supporters!
+                </p>
+                <div class="list-group">
+                    {% for ev in upcoming_events %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center p-3 mb-2 rounded border">
+                        <div>
+                            <div class="fw-bold text-dark">{{ ev.title }}</div>
+                            <div class="small text-muted">
+                                <i class="fa-regular fa-calendar me-1"></i> {{ ev.event_date|date:"D, d M Y, h:i A" }}
+                            </div>
+                            <div class="small text-muted">
+                                <i class="fa-solid fa-location-dot me-1"></i> {{ ev.location|truncatechars:35 }}
+                            </div>
+                        </div>
+                        <a href="{% url 'broadcast_event_whatsapp' ev.id %}" class="btn btn-success btn-sm rounded-pill fw-semibold" onclick="return confirm('Broadcast WhatsApp invitation for this event to all registered donors?')">
+                            <i class="fa-brands fa-whatsapp me-1"></i> Broadcast
+                        </a>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center py-3">No upcoming events scheduled. <a href="{% url 'event_create' %}">Create one now</a>.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Chart 1: Ratio Doughnut Chart (Raised vs Pending)
+    const ratioCtx = document.getElementById('ratioChart').getContext('2d');
+    new Chart(ratioCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Raised (₹)', 'Pending (₹)'],
+            datasets: [{
+                data: [{{ metrics.total_raised|floatformat:2 }}, {{ metrics.total_pending|floatformat:2 }}],
+                backgroundColor: ['#10b981', '#f59e0b'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '72%',
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // Chart 2: 12-Month Inflow Trend
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: {{ month_names|safe }},
+            datasets: [{
+                label: 'Donations Received (₹)',
+                data: {{ monthly_raised|safe }},
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.35,
+                pointBackgroundColor: '#10b981',
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) { return '₹' + value.toLocaleString('en-IN'); }
+                    }
+                }
+            }
+        }
+    });
+
+    // Chart 3: Monthly Maintenance Expense Distribution
+    const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+    new Chart(expenseCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ expense_categories|safe }},
+            datasets: [{
+                data: {{ expense_category_amounts|safe }},
+                backgroundColor: {{ expense_category_colors|safe }},
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+{% endblock %}

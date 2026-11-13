@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}WhatsApp Dispatch Logs & History | {{ TRUST_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 border-bottom pb-4">
+        <div>
+            <span class="badge bg-success bg-opacity-10 text-success px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp Outreach History
+            </span>
+            <h1 class="fw-bold text-dark mb-1">WhatsApp Notification Dispatch Register</h1>
+            <p class="text-secondary mb-0">Audit trail of automated payment reminders, event promotional broadcasts, and instant 80G tax receipts.</p>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill fw-semibold">
+            &larr; Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 px-4">
+                <thead class="table-light small text-uppercase text-secondary">
+                    <tr>
+                        <th class="ps-4">Timestamp</th>
+                        <th>Type</th>
+                        <th>Recipient</th>
+                        <th>Message Preview</th>
+                        <th>Delivery Status</th>
+                        <th class="text-end pe-4">Manual Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="ps-4 text-nowrap small text-muted">
+                            {{ log.created_at|date:"d M Y, h:i A" }}
+                        </td>
+                        <td>
+                            {% if log.notification_type == 'PAYMENT_REMINDER' %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis"><i class="fa-solid fa-clock me-1"></i> Payment Reminder</span>
+                            {% elif log.notification_type == 'EVENT_ADVERTISEMENT' %}
+                                <span class="badge bg-info-subtle text-info-emphasis"><i class="fa-solid fa-bullhorn me-1"></i> Event Ad</span>
+                            {% elif log.notification_type == 'DONATION_RECEIPT' %}
+                                <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-receipt me-1"></i> 80G Receipt</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary">{{ log.get_notification_type_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ log.recipient_name }}</div>
+                            <code class="small text-muted">{{ log.recipient_phone }}</code>
+                        </td>
+                        <td style="max-width: 320px;">
+                            <div class="text-truncate small text-secondary" title="{{ log.message_body }}">
+                                {{ log.message_body|truncatechars:100 }}
+                            </div>
+                        </td>
+                        <td>
+                            {% if log.status == 'SENT' %}
+                                <span class="badge bg-success rounded-pill"><i class="fa-solid fa-check me-1"></i> Sent</span>
+                            {% elif log.status == 'QUEUED' %}
+                                <span class="badge bg-warning rounded-pill"><i class="fa-solid fa-hourglass-half me-1"></i> Queued</span>
+                            {% else %}
+                                <span class="badge bg-danger rounded-pill"><i class="fa-solid fa-triangle-exclamation me-1"></i> Failed</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <!-- Direct WhatsApp Web / App One-Click Fallback Link -->
+                            <a href="{{ log.direct_wa_link }}" target="_blank" class="btn btn-outline-success btn-sm rounded-pill px-3" title="Open and send directly in WhatsApp Web/App">
+                                <i class="fa-brands fa-whatsapp me-1"></i> Open in WhatsApp
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fa-brands fa-whatsapp text-success fs-2 mb-2 d-block"></i>
+                            No WhatsApp notifications recorded yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

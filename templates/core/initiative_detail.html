@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ initiative.title }} | {{ TRUST_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'initiatives_list' %}">Initiatives</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ initiative.title|truncatechars:40 }}</li>
+        </ol>
+    </nav>
+
+    <div class="row g-4">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="position-relative" style="height: 380px; background: #cbd5e1;">
+                    {% if initiative.image %}
+                        <img src="{{ initiative.image.url }}" alt="{{ initiative.title }}" class="w-100 h-100 object-fit-cover">
+                    {% else %}
+                        <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary">
+                            <i class="fa-solid fa-hand-holding-heart display-1"></i>
+                        </div>
+                    {% endif %}
+                    <span class="category-badge m-3">{{ initiative.get_category_display }}</span>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h2 class="fw-bold text-dark mb-0">{{ initiative.title }}</h2>
+                        <a href="{% url 'initiative_edit' initiative.id %}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit
+                        </a>
+                    </div>
+
+                    <p class="lead text-secondary mb-4">{{ initiative.short_description }}</p>
+
+                    <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-bullseye text-primary me-2"></i>Mission Overview & Objectives</h5>
+                    <div class="text-secondary leading-relaxed mb-4">
+                        {{ initiative.detailed_description|linebreaks }}
+                    </div>
+
+                    <div class="p-4 bg-light rounded-4 border mb-4">
+                        <h6 class="fw-bold text-dark mb-2"><i class="fa-solid fa-clock text-primary me-2"></i>Campaign Timeline</h6>
+                        <div class="row g-2 small text-muted">
+                            <div class="col-sm-6">
+                                <strong>Started:</strong> {{ initiative.start_date|date:"d F Y" }}
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Target Completion:</strong> {{ initiative.end_date|default:"Ongoing Mission"|date:"d F Y" }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Verified Backers / Recent Donors -->
+                    <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-users text-success me-2"></i>Recent Mission Backers</h5>
+                    <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+                        {% for d in recent_donations %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div>
+                                <span class="fw-bold text-dark">{{ d.donor_name }}</span>
+                                <span class="small text-muted d-block">{{ d.created_at|date:"d M Y" }} &bull; 80G Receipt: {{ d.receipt_number }}</span>
+                            </div>
+                            <strong class="text-success">+₹{{ d.amount|floatformat:2|intcomma }}</strong>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item text-muted py-3 text-center">Be the first to back this initiative!</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Donation Box -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 100px;">
+                <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-chart-line text-primary me-2"></i>Donation Progress</h5>
+
+                <!-- Metrics Overview -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-baseline mb-1">
+                        <span class="fs-4 fw-extrabold text-success">₹{{ initiative.total_raised|floatformat:0|intcomma }}</span>
+                        <span class="text-muted small">Target: ₹{{ initiative.target_amount|floatformat:0|intcomma }}</span>
+                    </div>
+                    <div class="progress-trust mb-2">
+                        <div class="progress-bar" style="width: {{ initiative.progress_percentage }}%;"></div>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span><strong>{{ initiative.progress_percentage }}%</strong> raised</span>
+                        <span class="text-warning fw-bold">₹{{ initiative.pending_amount|floatformat:0|intcomma }} pending</span>
+                    </div>
+                </div>
+
+                <!-- Quick Donate CTA -->
+                <div class="d-grid gap-2 mb-3">
+                    <a href="{% url 'donate' %}?initiative={{ initiative.id }}" class="btn btn-warning btn-lg fw-bold rounded-pill shadow-sm">
+                        <i class="fa-solid fa-heart text-danger me-2"></i> Donate to this Mission
+                    </a>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 border text-secondary small mb-3">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fa-solid fa-certificate text-warning fs-5"></i>
+                        <strong class="text-dark">80G Tax Benefit Eligible</strong>
+                    </div>
+                    50% of your donation is deductible under Section 80G. An official receipt will be sent to your WhatsApp right away.
+                </div>
+
+                <!-- WhatsApp Share -->
+                <div class="border-top pt-3 text-center">
+                    <span class="small text-muted d-block mb-2">Help spread the word on WhatsApp:</span>
+                    <a href="https://wa.me/?text=Please%20support%20this%20critical%20initiative%20by%20{{ TRUST_NAME|urlencode }}:%20{{ initiative.title|urlencode }}%20-%20Details:%20{{ request.build_absolute_uri }}" target="_blank" class="btn btn-whatsapp btn-sm rounded-pill w-100">
+                        <i class="fa-brands fa-whatsapp me-1"></i> Share on WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

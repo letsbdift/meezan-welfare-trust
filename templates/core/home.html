@@ -1,0 +1,585 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Home | Meezan Welfare And Charitable Trust Harapanahalli{% endblock %}
+
+{% block content %}
+<!-- Hero Banner -->
+<section class="hero-banner" style="background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%) !important;">
+    <div class="container position-relative" style="z-index: 2;">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold text-uppercase mb-3" style="font-size: 0.78rem;">
+                    <i class="fa-solid fa-hands-holding-circle text-success me-1"></i> Harapanahalli Community Welfare Trust
+                </span>
+                <h1 class="hero-title mb-3">Meezan Welfare And Charitable Trust Harapanahalli</h1>
+                <p class="hero-subtitle mb-4">
+                    Dedicated to serving the community of Harapanahalli with compassion, unity, and social responsibility. From free summer drinking water across 15 circles and interfaith Iftar Koota to affordable healthcare at Meezan Poly Clinic and establishing the city's Baitul Maal.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'donate' %}" class="btn btn-warning btn-lg fw-bold px-4 py-3 rounded-pill shadow">
+                        <i class="fa-solid fa-hand-holding-heart text-danger me-2"></i> Donate Online / Scan SBI QR
+                    </a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-lg fw-semibold px-4 py-3 rounded-pill">
+                        <i class="fa-solid fa-gauge-high me-2"></i> Live Trust Dashboard
+                    </a>
+                    <a href="https://wa.me/{{ TRUST_WHATSAPP_NUMBER }}?text=Namaste%20Meezan%20Trust,%20I%20would%20like%20to%20support%20your%20initiatives" target="_blank" class="btn btn-whatsapp btn-lg rounded-pill px-4 py-3">
+                        <i class="fa-brands fa-whatsapp fs-5"></i> WhatsApp Helpline
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <!-- Live Metrics Highlights Card -->
+                <div class="bg-white text-dark rounded-4 p-4 shadow-lg border border-light">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-uppercase text-secondary mb-0 small"><i class="fa-solid fa-chart-simple text-success me-2"></i>Live Trust Fund Metrics</h6>
+                        <span class="badge bg-success bg-opacity-10 text-success fw-bold">Live Synced</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-baseline">
+                            <span class="text-secondary small">Raised to Date:</span>
+                            <span class="fs-4 fw-extrabold text-success">₹{{ metrics.total_raised|floatformat:2|intcomma }}</span>
+                        </div>
+                        <div class="progress-trust mt-2 mb-1">
+                            <div class="progress-bar" style="width: {{ metrics.progress_percentage }}%; background: linear-gradient(90deg, #059669, #10b981) !important;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted" style="font-size: 0.78rem;">
+                            <span>Expected Goal: ₹{{ metrics.total_expected|floatformat:0|intcomma }}</span>
+                            <span class="fw-bold text-success">{{ metrics.progress_percentage }}% achieved</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 text-center pt-2 border-top">
+                        <div class="col-4">
+                            <div class="p-2 bg-light rounded-3">
+                                <span class="d-block text-secondary text-xs">Pending Pledges</span>
+                                <strong class="text-warning small">₹{{ metrics.total_pending|floatformat:0|intcomma }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-light rounded-3">
+                                <span class="d-block text-secondary text-xs">Supporters</span>
+                                <strong class="text-dark small">{{ metrics.donor_count }} Donors</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-light rounded-3">
+                                <span class="d-block text-secondary text-xs">Active Causes</span>
+                                <strong class="text-success small">{{ metrics.active_initiatives_count }} Missions</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direct SBI Banking Summary Pill -->
+                    <div class="mt-3 p-3 bg-light rounded-3 border text-start small">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted"><i class="fa-solid fa-building-columns text-primary me-1"></i> SBI A/C:</span>
+                            <strong class="text-dark font-monospace">{{ TRUST_BANK_ACCOUNT_NO }}</strong>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-muted"><i class="fa-solid fa-qrcode text-success me-1"></i> UPI ID:</span>
+                            <strong class="text-success font-monospace">{{ TRUST_UPI_ID }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 text-center">
+                        <a href="{% url 'dashboard' %}" class="small text-success fw-bold text-decoration-none">
+                            Inspect Full Dashboard & Transparency Ledger &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- LIVE DYNAMIC METRICS TICKER -->
+<section class="py-4 bg-white border-bottom shadow-sm">
+    <div class="container">
+        <div class="row g-4 text-center">
+            <div class="col-md-3 col-6">
+                <div class="d-flex align-items-center justify-content-center gap-3">
+                    <div class="metric-icon bg-primary bg-opacity-10 text-primary">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+                    <div class="text-start">
+                        <div class="fs-4 fw-bold text-dark">₹{{ metrics.total_expected|floatformat:0|intcomma }}</div>
+                        <div class="text-secondary small">Total Expected Budget</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="d-flex align-items-center justify-content-center gap-3">
+                    <div class="metric-icon bg-success bg-opacity-10 text-success">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                    <div class="text-start">
+                        <div class="fs-4 fw-bold text-success">₹{{ metrics.total_raised|floatformat:0|intcomma }}</div>
+                        <div class="text-secondary small">Total Raised in Trust</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="d-flex align-items-center justify-content-center gap-3">
+                    <div class="metric-icon bg-warning bg-opacity-10 text-warning">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                    <div class="text-start">
+                        <div class="fs-4 fw-bold text-warning">₹{{ metrics.total_pending|floatformat:0|intcomma }}</div>
+                        <div class="text-secondary small">Pending & Pledged</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="d-flex align-items-center justify-content-center gap-3">
+                    <div class="metric-icon bg-info bg-opacity-10 text-info">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="text-start">
+                        <div class="fs-4 fw-bold text-dark">Harapanahalli</div>
+                        <div class="text-secondary small">Karnataka - 583131</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- THE 9 CORE ACTIVITIES CONDUCTED BY MEEZAN TRUST -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center max-w-700 mx-auto mb-5">
+            <span class="text-success fw-bold text-uppercase small"><i class="fa-solid fa-hand-holding-heart me-1"></i> Grassroots Impact</span>
+            <h2 class="fw-bold text-dark">Activities Conducted by Meezan Welfare and Charitable Trust</h2>
+            <p class="text-muted">
+                We are dedicated to serving the community with compassion, unity, and social responsibility. Below are the key initiatives we carry out across Harapanahalli:
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <!-- 1. Iftar Koota -->
+            <div class="col-lg-4 col-md-6">
+                <div class="trust-card p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                            1
+                        </div>
+                        <div>
+                            <span class="badge bg-success-subtle text-success small mb-1">Communal Harmony</span>
+                            <h5 class="fw-bold text-dark mb-0">Iftar Koota Program</h5>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-3 flex-grow-1">
+                        A special interfaith gathering during Ramadan inviting people from different religions to promote unity, mutual respect, and brotherhood in Harapanahalli.
+                    </p>
+                    <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light text-dark border">Ramadan Annual</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-success rounded-pill fw-semibold">Support</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Free Ration Kit Distribution -->
+            <div class="col-lg-4 col-md-6">
+                <div class="trust-card p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                            2
+                        </div>
+                        <div>
+                            <span class="badge bg-warning-subtle text-warning-emphasis small mb-1">Hunger Relief</span>
+                            <h5 class="fw-bold text-dark mb-0">Free Ration Kit Distribution</h5>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-3 flex-grow-1">
+                        Providing essential monthly ration supplies (rice, flour, dal, cooking oil) to widows, orphans, disabled individuals, and struggling families in need.
+                    </p>
+                    <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light text-dark border">Monthly Drive</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-warning text-dark rounded-pill fw-semibold">Support</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Spoken English Classes -->
+            <div class="col-lg-4 col-md-6">
+                <div class="trust-card p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                            3
+                        </div>
+                        <div>
+                            <span class="badge bg-primary-subtle text-primary small mb-1">Youth Empowerment</span>
+                            <h5 class="fw-bold text-dark mb-0">Spoken English Classes</h5>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-3 flex-grow-1">
+                        Helping local students and youth enhance their English communication, grammar, and interview skills to unlock better higher education and job opportunities.
+                    </p>
+                    <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light text-dark border">Ongoing Classes</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-primary rounded-pill fw-semibold">Support</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Blood Donation Camp -->
+            <div class="col-lg-4 col-md-6">
+                <div class="trust-card p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                            4
+                        </div>
+                        <div>
+                            <span class="badge bg-danger-subtle text-danger small mb-1">Emergency Healthcare</span>
+                            <h5 class="fw-bold text-dark mb-0">Blood Donation Camp</h5>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-3 flex-grow-1">
+                        Voluntary blood donation drives mobilizing youth to support medical emergencies, trauma care, and save lives in regional hospitals.
+                    </p>
+                    <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light text-dark border">Periodic Camps</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-danger rounded-pill fw-semibold">Support</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Health Camp -->
+            <div class="col-lg-4 col-md-6">
+                <div class="trust-card p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                            5
+                        </div>
+                        <div>
+                            <span class="badge bg-info-subtle text-info-emphasis small mb-1">Preventive Health</span>
+                            <h5 class="fw-bold text-dark mb-0">Health & Screening Camp</h5>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-3 flex-grow-1">
+                        Offering free general medical check-ups, blood pressure & glucose tests, free medicines, and raising vital awareness about community health and hygiene.
+                    </p>
+                    <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light text-dark border">Free Medical Checkup</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-info rounded-pill fw-semibold">Support</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. City Cleaning Campaigns -->
+            <div class="col-lg-4 col-md-6">
+                <div class="trust-card p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                            6
+                        </div>
+                        <div>
+                            <span class="badge bg-secondary-subtle text-secondary small mb-1">Civic Sanitation</span>
+                            <h5 class="fw-bold text-dark mb-0">City Cleaning Campaigns</h5>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-3 flex-grow-1">
+                        Organizing waste disposal and cleanliness drives across public streets of Harapanahalli, especially during Eid festivals and community gatherings.
+                    </p>
+                    <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light text-dark border">Eid Sanitation</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-secondary rounded-pill fw-semibold">Support</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Free Drinking Water Distribution -->
+            <div class="col-lg-4 col-md-6">
+                <div class="trust-card p-4 border-2 border-info">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-info text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                            7
+                        </div>
+                        <div>
+                            <span class="badge bg-info text-white small mb-1">15 Major Circles</span>
+                            <h5 class="fw-bold text-dark mb-0">Free Drinking Water</h5>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-3 flex-grow-1">
+                        Supplying clean, chilled, and safe drinking water across <strong>15 major circles of Harapanahalli</strong> during hot summers for commuters, laborers, and pedestrians.
+                    </p>
+                    <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light text-dark border">Summer Relief Kiosks</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-info rounded-pill fw-semibold">Support</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. Meezan Poly Clinic & Meezan Pharma -->
+            <div class="col-lg-4 col-md-6">
+                <div class="trust-card p-4 border-2 border-success">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                            8
+                        </div>
+                        <div>
+                            <span class="badge bg-success text-white small mb-1">Primary Care Center</span>
+                            <h5 class="fw-bold text-dark mb-0">Meezan Clinic & Pharma</h5>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-3 flex-grow-1">
+                        Affordable primary healthcare facility and subsidized dispensary for the Harapanahalli community, ensuring no family suffers from lack of medicines.
+                    </p>
+                    <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light text-dark border">Permanent Facility</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-success rounded-pill fw-semibold">Support</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. Setting Up Baitul Maal for the City -->
+            <div class="col-lg-4 col-md-6">
+                <div class="trust-card p-4 border-2 border-primary">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fs-4 fw-bold" style="width: 50px; height: 50px;">
+                            9
+                        </div>
+                        <div>
+                            <span class="badge bg-primary text-white small mb-1">City-Wide Treasury</span>
+                            <h5 class="fw-bold text-dark mb-0">Baitul Maal for Harapanahalli</h5>
+                        </div>
+                    </div>
+                    <p class="text-secondary small mb-3 flex-grow-1">
+                        Creating a structured, audited financial support system to collect Zakat & Sadaqah and assist poorest families with dignity, micro-grants, and 100% transparency.
+                    </p>
+                    <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light text-dark border">Zakat & Micro-Aid</span>
+                        <a href="{% url 'donate' %}" class="btn btn-sm btn-outline-primary rounded-pill fw-semibold">Support</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="{% url 'initiatives_list' %}" class="btn btn-success btn-lg rounded-pill fw-bold px-4">
+                Explore Detailed Campaign Goals &rarr;
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- OFFICIAL BANKING DETAILS & SBI QR CODE SCAN SECTION -->
+<section class="py-5 bg-light border-top border-bottom">
+    <div class="container">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden p-4 p-md-5 bg-white">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-6">
+                    <span class="badge bg-primary px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                        <i class="fa-solid fa-building-columns me-1"></i> Official Trust Bank Details
+                    </span>
+                    <h2 class="fw-bold text-dark mb-3">State Bank of India (SBI) Direct Transfer</h2>
+                    <p class="text-secondary mb-4">
+                        Donations can be transferred directly to our verified trust bank account at State Bank of India or via any UPI App (GPay, PhonePe, Paytm, BHIM).
+                    </p>
+
+                    <div class="list-group list-group-flush border rounded-3 overflow-hidden mb-3">
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 bg-light">
+                            <span class="text-muted small">Banking Name:</span>
+                            <strong class="text-dark small">{{ TRUST_BANK_ACCOUNT_NAME }}</strong>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span class="text-muted small">Account Number:</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <strong class="text-primary font-monospace fs-6">{{ TRUST_BANK_ACCOUNT_NO }}</strong>
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="navigator.clipboard.writeText('{{ TRUST_BANK_ACCOUNT_NO }}'); alert('Copied Account Number');"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span class="text-muted small">IFSC Code:</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <strong class="text-primary font-monospace">{{ TRUST_BANK_IFSC }}</strong>
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="navigator.clipboard.writeText('{{ TRUST_BANK_IFSC }}'); alert('Copied IFSC');"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <span class="text-muted small">UPI ID:</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <strong class="text-success font-monospace">{{ TRUST_UPI_ID }}</strong>
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="navigator.clipboard.writeText('{{ TRUST_UPI_ID }}'); alert('Copied UPI ID');"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'donate' %}" class="btn btn-warning fw-bold rounded-pill px-4">
+                            Donate via RazorPay &rarr;
+                        </a>
+                        <a href="https://wa.me/{{ TRUST_WHATSAPP_NUMBER }}?text=Hello%20Meezan%20Trust,%20I%20have%20transferred%20via%20SBI%20UPI" target="_blank" class="btn btn-whatsapp rounded-pill px-3">
+                            <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp Transfer Slip
+                        </a>
+                    </div>
+                </div>
+
+                <!-- SBI Scan & Pay QR Code Banner -->
+                <div class="col-lg-6 text-center">
+                    <div class="p-3 bg-light rounded-4 border d-inline-block shadow-sm">
+                        <img src="{{ TRUST_QR_IMAGE_URL }}" alt="SBI Scan & Pay QR Code" class="img-fluid rounded-3" style="max-height: 330px; object-fit: contain;">
+                        <div class="mt-2 text-center">
+                            <span class="badge bg-success px-3 py-1 rounded-pill small">
+                                <i class="fa-solid fa-qrcode me-1"></i> Scan & Pay: {{ TRUST_UPI_ID }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- MONTHLY MAINTENANCE TRANSPARENCY SECTION -->
+<section class="py-5">
+    <div class="container">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-6">
+                <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                    <i class="fa-solid fa-shield-halved me-1"></i> 100% Financial Accountability
+                </span>
+                <h2 class="fw-bold text-dark mb-3">Monthly Maintenance Cost Breakdowns Per Activity</h2>
+                <p class="text-secondary mb-4">
+                    Meezan Trust maintains complete transparency. Every operational cost—generic medicine stocks for Meezan Poly Clinic, summer water tanks, food ration kit procurement, and Baitul Maal widow assistance—is accounted for with audited bill vouchers and vendor payees.
+                </p>
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <span class="text-secondary small d-block">Current Month ({{ current_month_name }})</span>
+                            <span class="fs-4 fw-bold text-dark">₹{{ current_month_total|floatformat:2|intcomma }}</span>
+                            <span class="text-muted d-block small">Itemized maintenance spent</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <span class="text-secondary small d-block">Fiduciary Status</span>
+                            <span class="fs-5 fw-bold text-success"><i class="fa-solid fa-circle-check"></i> 100% Verified</span>
+                            <span class="text-muted d-block small">Supervised by Managing Trustees</span>
+                        </div>
+                    </div>
+                </div>
+                <a href="{% url 'maintenance_costs' %}" class="btn btn-primary fw-bold px-4 py-2 rounded-pill">
+                    <i class="fa-solid fa-chart-pie me-2"></i> Inspect Full Monthly Cost Breakdown &rarr;
+                </a>
+            </div>
+            <div class="col-lg-6">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="p-3 bg-white rounded-3 border shadow-sm">
+                            <i class="fa-solid fa-notes-medical text-danger fs-3 mb-2"></i>
+                            <h6 class="fw-bold mb-1">Meezan Clinic & Pharma</h6>
+                            <p class="text-muted small mb-0">Generic medicines, clinic maintenance, doctor honorariums.</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-white rounded-3 border shadow-sm">
+                            <i class="fa-solid fa-faucet-drip text-info fs-3 mb-2"></i>
+                            <h6 class="fw-bold mb-1">Summer Water Kiosks</h6>
+                            <p class="text-muted small mb-0">Drinking water tanks across 15 circles in Harapanahalli.</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-white rounded-3 border shadow-sm">
+                            <i class="fa-solid fa-utensils text-warning fs-3 mb-2"></i>
+                            <h6 class="fw-bold mb-1">Free Ration Kits</h6>
+                            <p class="text-muted small mb-0">Wholesale rice, atta, dal, and oil for needy widows & orphans.</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 bg-white rounded-3 border shadow-sm">
+                            <i class="fa-solid fa-hand-holding-heart text-success fs-3 mb-2"></i>
+                            <h6 class="fw-bold mb-1">Baitul Maal Relief</h6>
+                            <p class="text-muted small mb-0">Audited monthly widow pensions and destitute family aid.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- DEDICATED SECTION FOR TRUSTEE PROFILES -->
+<section class="py-5 bg-white border-top">
+    <div class="container">
+        <div class="text-center max-w-700 mx-auto mb-5">
+            <span class="text-success fw-bold text-uppercase small"><i class="fa-solid fa-users me-1"></i> Fiduciary Leadership</span>
+            <h2 class="fw-bold text-dark">Board of Trustees</h2>
+            <p class="text-muted">Dedicated community leaders, healthcare consultants, and educationists driving the governance, financial transparency, and humanitarian activities of Meezan Trust Harapanahalli.</p>
+        </div>
+
+        <div class="row g-4">
+            {% for trustee in trustees %}
+            <div class="col-lg-3 col-md-6">
+                <div class="trustee-card">
+                    <div>
+                        <div class="trustee-avatar-wrapper">
+                            {% if trustee.photo %}
+                                <img src="{{ trustee.photo.url }}" alt="{{ trustee.name }}" class="trustee-avatar">
+                            {% else %}
+                                <div class="trustee-placeholder" style="background: linear-gradient(135deg, #064e3b, #059669) !important;">
+                                    <i class="fa-solid fa-user-tie"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <h5 class="trustee-name">{{ trustee.name }}</h5>
+                        <div class="trustee-designation text-success">{{ trustee.designation }}</div>
+                        <p class="text-muted small mb-2">{{ trustee.bio|truncatechars:110 }}</p>
+                        {% if trustee.quote %}
+                        <div class="trustee-quote" style="border-left-color: #059669 !important;">
+                            "{{ trustee.quote }}"
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Social Media Links -->
+                    <div class="trustee-socials border-top pt-3">
+                        {% if trustee.linkedin_url %}
+                            <a href="{{ trustee.linkedin_url }}" target="_blank" class="social-icon-btn btn-linkedin" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                        {% endif %}
+                        {% if trustee.twitter_url %}
+                            <a href="{{ trustee.twitter_url }}" target="_blank" class="social-icon-btn btn-twitter" title="Twitter / X"><i class="fa-brands fa-x-twitter"></i></a>
+                        {% endif %}
+                        {% if trustee.facebook_url %}
+                            <a href="{{ trustee.facebook_url }}" target="_blank" class="social-icon-btn btn-facebook" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        {% endif %}
+                        {% if trustee.instagram_url %}
+                            <a href="{{ trustee.instagram_url }}" target="_blank" class="social-icon-btn btn-instagram" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                        {% endif %}
+                        {% if trustee.email %}
+                            <a href="mailto:{{ trustee.email }}" class="social-icon-btn btn-email" title="Email"><i class="fa-solid fa-envelope"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'trustees_list' %}" class="btn btn-outline-success rounded-pill fw-semibold px-4">
+                View Full Profiles & Board Directory &rarr;
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- CALL TO ACTION BANNER -->
+<section class="py-5 text-white text-center" style="background: linear-gradient(135deg, #022c22 0%, #064e3b 100%) !important;">
+    <div class="container py-3">
+        <h2 class="fw-bold mb-3">Join Hands with Meezan Trust Harapanahalli</h2>
+        <p class="max-w-700 mx-auto mb-4 opacity-75">
+            Your generous contribution to the Baitul Maal, Meezan Clinic, or free ration kits brings immediate relief and hope to vulnerable families in Harapanahalli.
+        </p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{% url 'donate' %}" class="btn btn-warning btn-lg fw-bold px-4 py-3 rounded-pill shadow">
+                <i class="fa-solid fa-heart text-danger me-2"></i> Donate Online / Scan SBI QR
+            </a>
+            <a href="https://wa.me/{{ TRUST_WHATSAPP_NUMBER }}?text=Namaste%20Trustee,%20I%20wish%20to%20support%20Meezan%20Trust%20Harapanahalli" target="_blank" class="btn btn-whatsapp btn-lg rounded-pill px-4 py-3">
+                <i class="fa-brands fa-whatsapp me-2"></i> Connect on WhatsApp (+91 87222 11966)
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}

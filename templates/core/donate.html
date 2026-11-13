@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Donate & Support | Meezan Welfare And Charitable Trust Harapanahalli{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header Banner -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="bg-primary text-white p-4 p-md-5 text-center position-relative" style="background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #059669 100%) !important;">
+                    <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                        <i class="fa-solid fa-heart text-danger me-1"></i> Dedicated Community Service
+                    </span>
+                    <h2 class="fw-bold mb-2">{{ TRUST_NAME }}</h2>
+                    <p class="text-white-50 max-w-700 mx-auto mb-0">
+                        {{ TRUST_TAGLINE }}. Every contribution directly funds our 9 core grassroots initiatives across Harapanahalli with 100% fiduciary transparency.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Two Payment Options: 1. Official Bank & UPI QR | 2. Online RazorPay Gateway -->
+            <div class="row g-4 mb-4">
+                <!-- Option 1: Official SBI Scan & Pay QR and Direct Bank Account -->
+                <div class="col-lg-5">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 p-4 border-top border-4 border-success">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="badge bg-success px-2 py-1"><i class="fa-solid fa-qrcode me-1"></i> Instant UPI & Bank Transfer</span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-2">Official State Bank of India (SBI) Details</h5>
+                        <p class="text-muted small mb-3">You can donate directly via Google Pay, PhonePe, Paytm, BHIM UPI, or NEFT/IMPS bank transfer.</p>
+
+                        <!-- SBI Scan & Pay QR Code Image -->
+                        <div class="text-center p-3 bg-light rounded-4 border mb-3">
+                            <img src="{{ TRUST_QR_IMAGE_URL }}" alt="SBI Scan & Pay QR Code - Meezan Welfare and Charitable Trust" class="img-fluid rounded-3 shadow-sm" style="max-height: 280px; object-fit: contain;">
+                            <div class="mt-2 text-center">
+                                <span class="badge bg-primary px-3 py-1 rounded-pill small">
+                                    <i class="fa-solid fa-mobile-screen-button me-1"></i> Scan with any UPI App
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Banking Information List -->
+                        <div class="list-group list-group-flush border rounded-3 overflow-hidden small">
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-2 bg-light">
+                                <span class="text-muted">Bank Name:</span>
+                                <strong class="text-dark">{{ TRUST_BANK_NAME }}</strong>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                <span class="text-muted">Account Name:</span>
+                                <strong class="text-dark text-end" style="max-width: 200px;">{{ TRUST_BANK_ACCOUNT_NAME }}</strong>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                <span class="text-muted">Account Number:</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <strong class="text-primary font-monospace fs-6">{{ TRUST_BANK_ACCOUNT_NO }}</strong>
+                                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="copyText('{{ TRUST_BANK_ACCOUNT_NO }}')" title="Copy Account Number"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                <span class="text-muted">IFSC Code:</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <strong class="text-primary font-monospace">{{ TRUST_BANK_IFSC }}</strong>
+                                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="copyText('{{ TRUST_BANK_IFSC }}')" title="Copy IFSC"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                <span class="text-muted">UPI ID:</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <strong class="text-success font-monospace">{{ TRUST_UPI_ID }}</strong>
+                                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="copyText('{{ TRUST_UPI_ID }}')" title="Copy UPI ID"><i class="fa-regular fa-copy"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp Confirmation Note -->
+                        <div class="mt-3 p-3 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 text-center">
+                            <span class="small text-muted d-block mb-1">Paid via UPI or Bank Transfer? Send screenshot to get official receipt:</span>
+                            <a href="https://wa.me/{{ TRUST_WHATSAPP_NUMBER }}?text=Namaste%20Meezan%20Trust,%20I%20have%20transferred%20a%20donation%20via%20UPI/Bank.%20Here%20is%20my%20screenshot" target="_blank" class="btn btn-whatsapp btn-sm rounded-pill w-100 fw-bold">
+                                <i class="fa-brands fa-whatsapp me-1"></i> Send Transfer Receipt on WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Option 2: Online Payment via RazorPay & Instant Receipt Generation -->
+                <div class="col-lg-7">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 p-4 border-top border-4 border-primary">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge bg-primary px-2 py-1"><i class="fa-solid fa-credit-card me-1"></i> Online Gateway & Pledge</span>
+                            <span class="badge bg-success-subtle text-success small">Instant Receipt</span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-2">Online Gateway & Pledge Checkout</h5>
+                        <p class="text-muted small mb-4">Pay online securely via RazorPay (Cards, NetBanking, UPI) or register an expected pledge for our Harapanahalli initiatives.</p>
+
+                        <form method="POST" id="donationForm">
+                            {% csrf_token %}
+
+                            <!-- Quick Amount Presets -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold text-dark mb-2">Select Donation Amount (INR):</label>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <button type="button" class="btn btn-outline-primary btn-amount px-3 py-2 rounded-pill fw-bold" data-amount="500">₹500</button>
+                                    <button type="button" class="btn btn-outline-primary btn-amount px-3 py-2 rounded-pill fw-bold" data-amount="1000">₹1,000</button>
+                                    <button type="button" class="btn btn-outline-primary btn-amount px-3 py-2 rounded-pill fw-bold active" data-amount="2500">₹2,500</button>
+                                    <button type="button" class="btn btn-outline-primary btn-amount px-3 py-2 rounded-pill fw-bold" data-amount="5000">₹5,000</button>
+                                    <button type="button" class="btn btn-outline-primary btn-amount px-3 py-2 rounded-pill fw-bold" data-amount="10000">₹10,000</button>
+                                </div>
+                                <div class="input-group input-group-lg">
+                                    <span class="input-group-text bg-light fw-bold text-primary">₹</span>
+                                    <input type="number" name="amount" id="id_amount" class="form-control form-control-lg fw-bold" value="2500" min="10" step="1" required placeholder="Enter custom amount">
+                                </div>
+                            </div>
+
+                            <!-- Target Initiative Selection -->
+                            <div class="mb-4">
+                                <label for="{{ form.initiative.id_for_label }}" class="form-label fw-bold text-dark">Allocate Towards Specific Meezan Initiative:</label>
+                                {{ form.initiative }}
+                                <div class="form-text text-muted">Select an activity (e.g. Free Ration Kits, Meezan Poly Clinic, Summer Water, Baitul Maal) or General Trust Fund.</div>
+                            </div>
+
+                            <hr class="my-3">
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.donor_name.id_for_label }}" class="form-label fw-bold small text-dark">Full Name *</label>
+                                    {{ form.donor_name }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.donor_phone.id_for_label }}" class="form-label fw-bold small text-dark">WhatsApp Number * (e.g. +91XXXXXXXXXX)</label>
+                                    {{ form.donor_phone }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.donor_email.id_for_label }}" class="form-label fw-bold small text-dark">Email Address</label>
+                                    {{ form.donor_email }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.pan_number.id_for_label }}" class="form-label fw-bold small text-dark">PAN Number (Optional)</label>
+                                    {{ form.pan_number }}
+                                </div>
+                            </div>
+
+                            <!-- Pledge Toggle -->
+                            <div class="p-3 bg-light rounded-3 my-3 border">
+                                <div class="form-check form-switch">
+                                    {{ form.is_pledge }}
+                                    <label class="form-check-label fw-bold text-dark" for="is_pledge_check">
+                                        <i class="fa-regular fa-calendar-check text-warning me-1"></i>
+                                        Commit as a Pending Pledge (Pay Later via RazorPay Link)
+                                    </label>
+                                </div>
+                                <div id="pledgeFields" class="mt-3 ps-4" style="display: none;">
+                                    <label class="form-label small fw-bold text-secondary">Target Fulfillment Date:</label>
+                                    {{ form.pledge_due_date }}
+                                    <p class="small text-muted mb-0 mt-1">
+                                        We will generate a direct RazorPay link and send a WhatsApp reminder to {{ TRUST_PHONE }} before the target date.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-warning btn-lg fw-bold py-3 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                    <i class="fa-solid fa-lock text-dark"></i>
+                                    <span id="submitBtnText">Proceed to Secure RazorPay Checkout &rarr;</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const amountButtons = document.querySelectorAll('.btn-amount');
+    const amountInput = document.getElementById('id_amount');
+
+    amountButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            amountButtons.forEach(b => b.classList.remove('active', 'btn-primary'));
+            btn.classList.add('active');
+            amountInput.value = btn.getAttribute('data-amount');
+        });
+    });
+
+    const pledgeCheck = document.getElementById('is_pledge_check');
+    const pledgeFields = document.getElementById('pledgeFields');
+    const submitBtnText = document.getElementById('submitBtnText');
+
+    if (pledgeCheck) {
+        pledgeCheck.addEventListener('change', function() {
+            if (this.checked) {
+                pledgeFields.style.display = 'block';
+                submitBtnText.innerText = 'Register Pledge & Dispatch WhatsApp Payment Link';
+            } else {
+                pledgeFields.style.display = 'none';
+                submitBtnText.innerText = 'Proceed to Secure RazorPay Checkout →';
+            }
+        });
+    }
+
+    function copyText(val) {
+        navigator.clipboard.writeText(val);
+        alert('Copied to clipboard: ' + val);
+    }
+</script>
+{% endblock %}

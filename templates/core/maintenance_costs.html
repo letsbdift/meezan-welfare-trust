@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Monthly Maintenance Cost Breakdown per Activity | {{ TRUST_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header & Filter Selector -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 border-bottom pb-4">
+        <div>
+            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                <i class="fa-solid fa-scale-balanced me-1"></i> Radical Financial Transparency
+            </span>
+            <h1 class="fw-bold text-dark mb-1">Monthly Maintenance Cost Breakdowns</h1>
+            <p class="text-secondary mb-0">Detailed, itemized operational expenditures categorized per charitable activity and verified by bill vouchers.</p>
+        </div>
+
+        <!-- Month & Year Selector Form -->
+        <div class="d-flex align-items-center gap-2">
+            <form method="GET" class="d-flex gap-2">
+                <select name="month" class="form-select form-select-sm rounded-pill fw-semibold" onchange="this.form.submit()">
+                    {% for m_num, m_name in months_list %}
+                        <option value="{{ m_num }}" {% if m_num == selected_month %}selected{% endif %}>{{ m_name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="year" class="form-select form-select-sm rounded-pill fw-semibold" onchange="this.form.submit()">
+                    {% for yr in years_list %}
+                        <option value="{{ yr }}" {% if yr == selected_year %}selected{% endif %}>{{ yr }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{% url 'expense_create' %}" class="btn btn-outline-primary btn-sm rounded-pill fw-semibold text-nowrap">
+                <i class="fa-solid fa-plus me-1"></i> Log Expense
+            </a>
+        </div>
+    </div>
+
+    <!-- Monthly Summary Ticker -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="metric-card border-expected">
+                <div class="metric-title text-primary"><i class="fa-regular fa-calendar me-1"></i> Period Audited</div>
+                <div class="metric-value fs-3 text-dark">{{ selected_month_name }} {{ selected_year }}</div>
+                <div class="small text-muted mt-1">Verified expenditure cycle</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card border-raised">
+                <div class="metric-title text-danger"><i class="fa-solid fa-receipt me-1"></i> Total Maintenance Spent</div>
+                <div class="metric-value text-danger">₹{{ total_month_spent|floatformat:2|intcomma }}</div>
+                <div class="small text-muted mt-1">Across {{ expenses.count }} itemized vouchers</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card border-donors">
+                <div class="metric-title text-success"><i class="fa-solid fa-clipboard-check me-1"></i> Fiduciary Certification</div>
+                <div class="metric-value text-success fs-3">Audited & Clean</div>
+                <div class="small text-muted mt-1">Reg No: {{ TRUST_REGISTRATION_NO }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart & Category Breakdown Row -->
+    <div class="row g-4 mb-5">
+        <!-- Doughnut Distribution Chart -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                <h5 class="fw-bold text-dark mb-3">
+                    <i class="fa-solid fa-chart-pie text-primary me-2"></i> Activity Cost Distribution
+                </h5>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="costDistributionChart"></canvas>
+                </div>
+                <p class="text-muted small text-center mt-3 mb-0">Percentage share of maintenance budget utilized per activity in {{ selected_month_name }} {{ selected_year }}.</p>
+            </div>
+        </div>
+
+        <!-- Activity Breakdown Cards -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                <h5 class="fw-bold text-dark mb-3">
+                    <i class="fa-solid fa-list-check text-success me-2"></i> Cost Breakdown per Activity
+                </h5>
+                <div class="row g-3">
+                    {% for item in breakdown %}
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column justify-content-between">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 34px; height: 34px; background-color: {{ item.activity.color_hex }};">
+                                    <i class="fa-solid {{ item.activity.icon }} fs-6"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0 text-dark small">{{ item.activity.name }}</h6>
+                                    <span class="text-muted" style="font-size: 0.75rem;">{{ item.expense_count }} expenses logged</span>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-end mt-2 pt-2 border-top">
+                                <div>
+                                    <span class="text-muted small d-block">Amount:</span>
+                                    <strong class="text-dark">₹{{ item.amount|floatformat:2|intcomma }}</strong>
+                                </div>
+                                <span class="badge bg-white text-dark border fw-bold">{{ item.percentage }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ITEMIZED EXPENSE VOUCHER AUDIT TABLE -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="fw-bold mb-1 text-dark">
+                    <i class="fa-solid fa-file-invoice text-primary me-2"></i>
+                    Itemized Vouchers & Payment Receipts Log
+                </h5>
+                <p class="text-muted small mb-0">Transparent register of every incurred expenditure, payee, and bill reference for {{ selected_month_name }} {{ selected_year }}.</p>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm rounded-pill" onclick="window.print()">
+                <i class="fa-solid fa-print me-1"></i> Print / PDF Audit
+            </button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 px-4">
+                <thead class="table-light small text-uppercase text-secondary">
+                    <tr>
+                        <th class="ps-4">Date</th>
+                        <th>Activity / Category</th>
+                        <th>Description / Purpose</th>
+                        <th>Vendor / Payee</th>
+                        <th>Voucher #</th>
+                        <th>Amount (INR)</th>
+                        <th class="text-end pe-4">Receipt Voucher</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exp in expenses %}
+                    <tr>
+                        <td class="ps-4 text-nowrap">
+                            <span class="fw-semibold text-dark">{{ exp.date_incurred|date:"d M Y" }}</span>
+                        </td>
+                        <td>
+                            <span class="badge rounded-pill" style="background-color: {{ exp.activity.color_hex }}15; color: {{ exp.activity.color_hex }}; border: 1px solid {{ exp.activity.color_hex }}30;">
+                                <i class="fa-solid {{ exp.activity.icon }} me-1"></i> {{ exp.activity.name|truncatechars:25 }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">{{ exp.title }}</div>
+                            {% if exp.notes %}<div class="small text-muted">{{ exp.notes|truncatechars:60 }}</div>{% endif %}
+                        </td>
+                        <td>
+                            <span class="text-dark small">{{ exp.vendor_payee|default:"Verified Vendor" }}</span>
+                        </td>
+                        <td>
+                            <code class="text-secondary small">{{ exp.bill_voucher_number|default:"VOUCH-PENDING" }}</code>
+                        </td>
+                        <td>
+                            <strong class="text-danger">₹{{ exp.amount|floatformat:2|intcomma }}</strong>
+                        </td>
+                        <td class="text-end pe-4">
+                            {% if exp.receipt_voucher %}
+                                <a href="{{ exp.receipt_voucher.url }}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill">
+                                    <i class="fa-solid fa-paperclip me-1"></i> View Bill
+                                </a>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary small">Filed in Office</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-folder-open fs-2 mb-2 d-block"></i>
+                            No maintenance expenses recorded for {{ selected_month_name }} {{ selected_year }}.
+                            <div class="mt-2">
+                                <a href="{% url 'expense_create' %}" class="btn btn-primary btn-sm rounded-pill">Log First Expense</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if expenses %}
+                <tfoot class="table-light fw-bold">
+                    <tr>
+                        <td colspan="5" class="ps-4 text-end">Total Maintenance Expenditures for {{ selected_month_name }} {{ selected_year }}:</td>
+                        <td class="text-danger fs-6">₹{{ total_month_spent|floatformat:2|intcomma }}</td>
+                        <td class="text-end pe-4 small text-muted">100% Verified</td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const costLabels = {{ chart_labels|safe }};
+    const costAmounts = {{ chart_amounts|safe }};
+    const costColors = {{ chart_colors|safe }};
+
+    const costCtx = document.getElementById('costDistributionChart').getContext('2d');
+    new Chart(costCtx, {
+        type: 'doughnut',
+        data: {
+            labels: costLabels,
+            datasets: [{
+                data: costAmounts,
+                backgroundColor: costColors,
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { boxWidth: 12, font: { size: 11 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.raw || 0;
+                            return ' ' + context.label + ': ₹' + val.toLocaleString('en-IN');
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Donation Receipt #{{ donation.receipt_number }} | {{ TRUST_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Action buttons above receipt (hidden in print) -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print max-w-850 mx-auto">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill btn-sm">
+            &larr; Back to Dashboard
+        </a>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-primary rounded-pill btn-sm fw-bold">
+                <i class="fa-solid fa-print me-1"></i> Print / Download PDF
+            </button>
+            <a href="https://wa.me/{{ donation.donor_phone }}?text=Here%20is%20your%20official%20Meezan%20Trust%20receipt%20{{ donation.receipt_number }}:%20{{ request.build_absolute_uri }}" target="_blank" class="btn btn-whatsapp rounded-pill btn-sm fw-semibold">
+                <i class="fa-brands fa-whatsapp me-1"></i> Share on WhatsApp
+            </a>
+        </div>
+    </div>
+
+    <!-- Official Printable Receipt Container -->
+    <div class="receipt-container">
+        <!-- Verified Digital Seal -->
+        <div class="receipt-seal" style="border-color: #059669; color: #059669;">
+            <i class="fa-solid fa-circle-check me-1"></i> Verified Receipt
+        </div>
+
+        <!-- Trust Header -->
+        <div class="text-center pb-4 mb-4 border-bottom">
+            <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                <i class="fa-solid fa-scale-balanced text-success fs-2"></i>
+                <h3 class="fw-extrabold text-dark mb-0">{{ TRUST_NAME }}</h3>
+            </div>
+            <p class="text-secondary small mb-1">{{ TRUST_TAGLINE }}</p>
+            <p class="text-secondary small mb-1">{{ TRUST_ADDRESS }} &bull; Helpline: {{ TRUST_PHONE }}</p>
+            <div class="badge bg-light text-dark border px-3 py-1 mt-1">
+                SBI A/C: <strong>{{ TRUST_BANK_ACCOUNT_NO }}</strong> &bull; IFSC: <strong>{{ TRUST_BANK_IFSC }}</strong> &bull; UPI: <strong>{{ TRUST_UPI_ID }}</strong>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <div>
+                <h5 class="fw-bold text-success mb-0">OFFICIAL DONATION RECEIPT</h5>
+                <span class="text-muted small">Meezan Welfare And Charitable Trust, Harapanahalli</span>
+            </div>
+            <div class="text-end">
+                <span class="text-muted small d-block">Receipt Number:</span>
+                <strong class="fs-5 text-dark">{{ donation.receipt_number }}</strong>
+                <span class="text-muted small d-block">Date: {{ donation.created_at|date:"d F Y, h:i A" }}</span>
+            </div>
+        </div>
+
+        <!-- Receipt Content Body -->
+        <div class="mb-4">
+            <p class="lead fs-6 mb-3">
+                Received with sincere gratitude from <strong>{{ donation.donor_name }}</strong>,
+                {% if donation.donor_phone %}Phone / WhatsApp: <strong>{{ donation.donor_phone }}</strong>,{% endif %}
+                {% if donation.donor_email %}Email: <strong>{{ donation.donor_email }}</strong>,{% endif %}
+                {% if donation.pan_number %}holding PAN: <strong>{{ donation.pan_number }}</strong>,{% endif %}
+                a charitable contribution of:
+            </p>
+
+            <div class="p-3 bg-light rounded-3 border text-center my-3">
+                <span class="text-muted small text-uppercase d-block">Amount Received</span>
+                <div class="display-6 fw-bold text-success">₹{{ donation.amount|floatformat:2|intcomma }}</div>
+                <span class="small text-secondary fw-semibold">Paid via {{ donation.get_payment_method_display }} (Ref: {{ donation.razorpay_payment_id|default:donation.receipt_number }})</span>
+            </div>
+
+            <p class="fs-6 mb-3">
+                Allocated exclusively towards the charitable community activity:
+                <strong>{{ donation.initiative.title|default:"Baitul Maal & Community Welfare Fund" }}</strong>.
+            </p>
+
+            {% if donation.notes %}
+            <p class="small text-muted mb-3">
+                <em>Contribution Purpose / Note: {{ donation.notes }}</em>
+            </p>
+            {% endif %}
+        </div>
+
+        <!-- Statutory Note -->
+        <div class="p-3 rounded-3 bg-light border small text-secondary mb-4">
+            <strong>Community Welfare Note:</strong>
+            Donations made to {{ TRUST_NAME }} directly fund community initiatives across Harapanahalli including Meezan Poly Clinic & Pharma, Summer Drinking Water across 15 circles, Free Ration Kits, and City Baitul Maal. This is an electronically generated and tracked receipt.
+        </div>
+
+        <!-- Signatures & Authority -->
+        <div class="row pt-4 mt-4 border-top text-center">
+            <div class="col-4">
+                <div class="text-muted small mb-2">Tracking Hash:</div>
+                <code class="small text-dark">{{ donation.receipt_number }}</code>
+            </div>
+            <div class="col-4">
+                <div class="text-muted small mb-1">Audit Ledger:</div>
+                <span class="badge bg-success-subtle text-success small px-2 py-1"><i class="fa-solid fa-check"></i> Accounted in Trust Books</span>
+            </div>
+            <div class="col-4">
+                <div class="fw-bold text-dark pt-3 border-top border-dark d-inline-block px-4">
+                    Managing Trustee
+                    <div class="small text-muted fw-normal">For {{ TRUST_SHORT_NAME }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

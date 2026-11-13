@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Events & Drives | {{ TRUST_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 border-bottom pb-4">
+        <div>
+            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                <i class="fa-regular fa-calendar-check me-1"></i> Community Outreach
+            </span>
+            <h1 class="fw-bold text-dark mb-1">Trust Events & Volunteer Drives</h1>
+            <p class="text-secondary mb-0">Join our upcoming medical camps, meal distributions, and fundraising galas in person.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'event_create' %}" class="btn btn-outline-primary rounded-pill fw-semibold">
+                <i class="fa-solid fa-plus me-1"></i> Publish New Event
+            </a>
+        </div>
+    </div>
+
+    <!-- Upcoming Events Section -->
+    <h4 class="fw-bold text-dark mb-3"><i class="fa-regular fa-calendar-star text-warning me-2"></i>Upcoming Events ({{ upcoming_events.count }})</h4>
+    <div class="row g-4 mb-5">
+        {% for ev in upcoming_events %}
+        <div class="col-lg-4 col-md-6">
+            <div class="trust-card p-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-3 text-center" style="min-width: 65px;">
+                        <span class="d-block fw-bold fs-4 lh-1">{{ ev.event_date|date:"d" }}</span>
+                        <span class="d-block small text-uppercase fw-semibold">{{ ev.event_date|date:"M" }}</span>
+                    </div>
+                    <div>
+                        <span class="badge bg-success-subtle text-success small mb-1">{{ ev.get_status_display }}</span>
+                        <h6 class="fw-bold text-dark mb-0">
+                            <a href="{{ ev.get_absolute_url }}" class="text-dark text-decoration-none hover-primary">{{ ev.title }}</a>
+                        </h6>
+                    </div>
+                </div>
+
+                <p class="text-muted small mb-3 flex-grow-1">{{ ev.description|truncatechars:130 }}</p>
+
+                <div class="small text-muted mb-3 border-top pt-2">
+                    <div class="mb-1"><i class="fa-solid fa-location-dot text-danger me-2"></i> {{ ev.location }}</div>
+                    <div><i class="fa-regular fa-clock text-primary me-2"></i> {{ ev.event_date|date:"h:i A" }}</div>
+                </div>
+
+                <div class="d-flex gap-2 pt-2 border-top">
+                    <a href="{{ ev.get_absolute_url }}" class="btn btn-primary btn-sm w-100 rounded-pill">View & RSVP</a>
+                    <a href="{% url 'broadcast_event_whatsapp' ev.id %}" class="btn btn-success btn-sm rounded-pill px-3" title="Broadcast WhatsApp Advertisement to Donors" onclick="return confirm('Send WhatsApp invitations for this event to all registered donors?')">
+                        <i class="fa-brands fa-whatsapp"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-4 text-muted">No upcoming events scheduled at this moment.</div>
+        {% endfor %}
+    </div>
+
+    <!-- Past Completed Events -->
+    {% if past_events %}
+    <h4 class="fw-bold text-dark mb-3"><i class="fa-solid fa-clock-rotate-left text-secondary me-2"></i>Past Completed Events</h4>
+    <div class="row g-4">
+        {% for ev in past_events %}
+        <div class="col-lg-4 col-md-6">
+            <div class="trust-card p-4 opacity-75">
+                <span class="badge bg-secondary-subtle text-secondary small mb-2">Completed</span>
+                <h6 class="fw-bold text-dark mb-2">{{ ev.title }}</h6>
+                <p class="text-muted small mb-2">{{ ev.description|truncatechars:110 }}</p>
+                <div class="small text-muted">
+                    <i class="fa-regular fa-calendar me-1"></i> Held on {{ ev.event_date|date:"d M Y" }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

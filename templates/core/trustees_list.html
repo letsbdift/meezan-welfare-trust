@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Board of Trustees | {{ TRUST_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3 border-bottom pb-4">
+        <div>
+            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                <i class="fa-solid fa-users me-1"></i> Fiduciary Governance & Leadership
+            </span>
+            <h1 class="fw-bold text-dark mb-2">Board of Trustees</h1>
+            <p class="text-secondary max-w-700 mb-0">
+                Meet the visionary leaders, senior medical consultants, educators, and chartered accountants guiding the ethical governance, program execution, and complete financial transparency of {{ TRUST_NAME }}.
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'trustee_create' %}" class="btn btn-outline-primary rounded-pill fw-semibold">
+                <i class="fa-solid fa-user-plus me-1"></i> Add Trustee Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Trustee Profiles Grid -->
+    <div class="row g-4">
+        {% for trustee in trustees %}
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100 position-relative">
+                <div class="d-flex flex-column flex-sm-row gap-4 align-items-sm-start">
+                    <!-- Photo / Avatar -->
+                    <div class="text-center flex-shrink-0">
+                        <div class="trustee-avatar-wrapper mb-2">
+                            {% if trustee.photo %}
+                                <img src="{{ trustee.photo.url }}" alt="{{ trustee.name }}" class="trustee-avatar" style="width: 140px; height: 140px;">
+                            {% else %}
+                                <div class="trustee-placeholder" style="width: 140px; height: 140px; font-size: 3rem;">
+                                    <i class="fa-solid fa-user-tie"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span class="badge bg-success bg-opacity-10 text-success small rounded-pill px-2 py-1">
+                            <i class="fa-solid fa-circle-check me-1"></i> Active Trustee
+                        </span>
+                    </div>
+
+                    <!-- Details & Bio -->
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h4 class="fw-bold text-dark mb-1">{{ trustee.name }}</h4>
+                                <div class="text-primary fw-semibold mb-2">{{ trustee.designation }}</div>
+                            </div>
+                            <a href="{% url 'trustee_edit' trustee.id %}" class="btn btn-light btn-sm text-muted rounded-circle p-1" title="Edit Profile">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                        </div>
+
+                        {% if trustee.quote %}
+                        <div class="trustee-quote mb-3">
+                            <i class="fa-solid fa-quote-left text-warning me-2"></i>
+                            {{ trustee.quote }}
+                        </div>
+                        {% endif %}
+
+                        <p class="text-secondary small mb-3 leading-relaxed">
+                            {{ trustee.bio }}
+                        </p>
+
+                        <!-- Contact & Social Media Links -->
+                        <div class="d-flex flex-wrap gap-2 align-items-center pt-2 border-top">
+                            <span class="text-muted small me-2">Connect:</span>
+                            {% if trustee.linkedin_url %}
+                                <a href="{{ trustee.linkedin_url }}" target="_blank" class="social-icon-btn btn-linkedin" title="LinkedIn Profile"><i class="fa-brands fa-linkedin-in"></i></a>
+                            {% endif %}
+                            {% if trustee.twitter_url %}
+                                <a href="{{ trustee.twitter_url }}" target="_blank" class="social-icon-btn btn-twitter" title="Twitter / X Profile"><i class="fa-brands fa-x-twitter"></i></a>
+                            {% endif %}
+                            {% if trustee.facebook_url %}
+                                <a href="{{ trustee.facebook_url }}" target="_blank" class="social-icon-btn btn-facebook" title="Facebook Profile"><i class="fa-brands fa-facebook-f"></i></a>
+                            {% endif %}
+                            {% if trustee.instagram_url %}
+                                <a href="{{ trustee.instagram_url }}" target="_blank" class="social-icon-btn btn-instagram" title="Instagram Profile"><i class="fa-brands fa-instagram"></i></a>
+                            {% endif %}
+                            {% if trustee.email %}
+                                <a href="mailto:{{ trustee.email }}" class="social-icon-btn btn-email" title="Send Email"><i class="fa-solid fa-envelope"></i></a>
+                            {% endif %}
+                            {% if trustee.phone %}
+                                <a href="https://wa.me/{{ trustee.phone|cut:' '|cut:'+' }}" target="_blank" class="social-icon-btn text-success" title="WhatsApp Message"><i class="fa-brands fa-whatsapp"></i></a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fa-solid fa-users text-secondary fs-1 mb-3 d-block"></i>
+            <h5 class="text-muted">No trustee profiles found.</h5>
+            <a href="{% url 'trustee_create' %}" class="btn btn-primary rounded-pill mt-2">Add First Trustee</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Governance Code Banner -->
+    <div class="mt-5 p-4 rounded-4 bg-light border text-center">
+        <h5 class="fw-bold text-dark mb-2"><i class="fa-solid fa-handshake-angle text-primary me-2"></i>Trustee Governance Commitment</h5>
+        <p class="text-muted small max-w-700 mx-auto mb-0">
+            Our Trustees receive zero remuneration, dividend, or honorarium from public donations. 100% of our board's efforts are completely voluntary, dedicated purely to charitable welfare and absolute fiduciary integrity.
+        </p>
+    </div>
+</div>
+{% endblock %}

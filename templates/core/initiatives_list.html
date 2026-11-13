@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Charitable Initiatives & Causes | {{ TRUST_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 border-bottom pb-4">
+        <div>
+            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                <i class="fa-solid fa-hand-holding-heart me-1"></i> Grassroots Missions
+            </span>
+            <h1 class="fw-bold text-dark mb-1">Our Charitable Initiatives</h1>
+            <p class="text-secondary mb-0">Explore our ongoing campaigns, track expected targets and raised funds, and contribute directly.</p>
+        </div>
+        <a href="{% url 'initiative_create' %}" class="btn btn-outline-primary rounded-pill fw-semibold">
+            <i class="fa-solid fa-plus me-1"></i> Upload Initiative
+        </a>
+    </div>
+
+    <!-- Category Filter Pills -->
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <a href="{% url 'initiatives_list' %}" class="btn btn-sm rounded-pill {% if not selected_category %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+            All Causes ({{ initiatives.count }})
+        </a>
+        {% for cat_code, cat_label in categories %}
+            <a href="{% url 'initiatives_list' %}?category={{ cat_code }}" class="btn btn-sm rounded-pill {% if selected_category == cat_code %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                {{ cat_label }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- Initiatives Grid -->
+    <div class="row g-4">
+        {% for init in initiatives %}
+        <div class="col-lg-4 col-md-6">
+            <div class="trust-card">
+                <div class="card-img-wrap">
+                    {% if init.image %}
+                        <img src="{{ init.image.url }}" alt="{{ init.title }}">
+                    {% else %}
+                        <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-secondary bg-opacity-10 text-secondary">
+                            <i class="fa-solid fa-hand-holding-heart fs-1"></i>
+                        </div>
+                    {% endif %}
+                    <span class="category-badge">{{ init.get_category_display }}</span>
+                    {% if init.is_goal_reached %}
+                        <span class="badge bg-success position-absolute top-0 end-0 m-3 px-3 py-1 rounded-pill">Goal Reached!</span>
+                    {% endif %}
+                </div>
+                <div class="p-4 d-flex flex-column flex-grow-1 justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="fw-bold text-dark mb-0">
+                                <a href="{{ init.get_absolute_url }}" class="text-dark text-decoration-none hover-primary">{{ init.title }}</a>
+                            </h5>
+                            <a href="{% url 'initiative_edit' init.id %}" class="text-muted ms-2" title="Edit Initiative"><i class="fa-solid fa-pen-to-square small"></i></a>
+                        </div>
+                        <p class="text-muted small mb-3">{{ init.short_description }}</p>
+                    </div>
+
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                            <span class="text-muted">Target Progress</span>
+                            <span class="fw-bold text-primary">{{ init.progress_percentage }}%</span>
+                        </div>
+                        <div class="progress-trust mb-2">
+                            <div class="progress-bar" style="width: {{ init.progress_percentage }}%;"></div>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mb-3">
+                            <span>Raised: <strong class="text-success">₹{{ init.total_raised|floatformat:0|intcomma }}</strong></span>
+                            <span>Pending: <strong class="text-warning">₹{{ init.pending_amount|floatformat:0|intcomma }}</strong></span>
+                            <span>Target: <strong class="text-dark">₹{{ init.target_amount|floatformat:0|intcomma }}</strong></span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'donate' %}?initiative={{ init.id }}" class="btn btn-warning btn-sm w-100 fw-bold rounded-pill">
+                                <i class="fa-solid fa-heart me-1"></i> Donate via RazorPay
+                            </a>
+                            <a href="{{ init.get_absolute_url }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <i class="fa-solid fa-hand-holding-heart text-secondary fs-1 mb-3 d-block"></i>
+            <h5 class="text-muted">No initiatives found in this category.</h5>
+            <a href="{% url 'initiative_create' %}" class="btn btn-primary rounded-pill mt-2">Upload New Initiative</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
