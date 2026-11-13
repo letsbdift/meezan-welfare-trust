@@ -380,3 +380,68 @@ class MeezanTrustComprehensiveTestCase(TestCase):
         del_res = self.client.post(reverse('initiative_delete', kwargs={'pk': del_init.id}))
         self.assertEqual(del_res.status_code, 302)
         self.assertFalse(Initiative.objects.filter(id=del_init.id).exists())
+
+    def test_donor_categorization_and_outreach(self):
+        # 1. Login as staff
+        self.client.login(username='trustee_admin', password='testpassword123')
+
+        # 2. Create categorized donor
+        donor_res = self.client.post(reverse('donor_create'), {
+            'name': 'Janab Farooq Ahmed',
+            'phone': '+919888877777',
+            'email': 'farooq@example.com',
+            'category': 'ACTIVITY_SPECIFIC',
+            'interested_activities': [self.initiative.id],
+            'notes': 'Interested specifically in hunger relief and iftar drives.',
+            'preferred_outreach': 'WHATSAPP',
+            'opt_in_whatsapp': True
+        })
+        self.assertEqual(donor_res.status_code, 302)
+
+        new_donor = Donor.objects.filter(phone='+919888877777').first()
+        self.assertIsNotNone(new_donor)
+        self.assertEqual(new_donor.category, 'ACTIVITY_SPECIFIC')
+        self.assertIn(self.initiative, new_donor.interested_activities.all())
+        self.assertIn('Iftar Koota', new_donor.get_interested_activities_display())
+
+        # 3. Targeted WhatsApp outreach generation
+        outreach_res = self.client.get(reverse('donor_outreach', kwargs={'donor_id': new_donor.id}), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(outreach_res.status_code, 200)
+        data = outreach_res.json()
+        self.assertTrue(data['success'])
+        self.assertIn('Iftar Koota', data['message'])
+        self.assertIn('wa.me/919888877777', data['whatsapp_url'])
+
+        # 4. CSV Export
+        csv_res = self.client.get(reverse('export_donors_csv'))
+        self.assertEqual(csv_res.status_code, 200)
+        self.assertEqual(csv_res['Content-Type'], 'text/csv; charset=utf-8')
+        self.assertContains(csv_res, 'Janab Farooq Ahmed')
+        self.assertContains(csv_res, 'Activity-Specific Supporter')
+
+    def test_pwa_and_security_endpoints(self):
+        # 1. Test PWA manifest
+        manifest_res = self.client.get(reverse('pwa_manifest'))
+        self.assertEqual(manifest_res.status_code, 200)
+        manifest_json = manifest_res.json()
+        self.assertEqual(manifest_json['name'], 'Meezan Welfare and Charitable Trust')
+        self.assertEqual(manifest_json['display'], 'standalone')
+        self.assertEqual(manifest_json['theme_color'], '#064e3b')
+
+        # 2. Test Service Worker
+        sw_res = self.client.get(reverse('service_worker'))
+        self.assertEqual(sw_res.status_code, 200)
+        self.assertEqual(sw_res['Content-Type'], 'application/javascript')
+        self.assertEqual(sw_res['Service-Worker-Allowed'], '/')
+        self.assertContains(sw_res, 'meezan-trust-v2')
+
+        # 3. Test Offline fallback
+        offline_res = self.client.get(reverse('offline_view'))
+        self.assertEqual(offline_res.status_code, 200)
+        self.assertContains(offline_res, 'You are currently offline')
+
+        # 4. Test Security Headers on Home
+        home_res = self.client.get(reverse('home'))
+        self.assertEqual(home_res.status_code, 200)
+        self.assertEqual(home_res.headers.get('X-Content-Type-Options'), 'nosniff')
+        self.assertEqual(home_res.headers.get('X-Frame-Options'), 'SAMEORIGIN')

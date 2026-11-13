@@ -43,4 +43,16 @@ urlpatterns = [
     path('manage/photo/new/', views.manage_activity_photo, name='photo_create'),
     path('manage/photo/<int:pk>/edit/', views.manage_activity_photo, name='photo_edit'),
     path('manage/photo/<int:pk>/delete/', views.delete_activity_photo, name='photo_delete'),
+
+    # Donor Categorization & Contact Management (Staff Only)
+    path('manage/donor/new/', views.manage_donor, name='donor_create'),
+    path('manage/donor/<int:pk>/edit/', views.manage_donor, name='donor_edit'),
+    path('manage/donor/<int:pk>/delete/', views.delete_donor, name='donor_delete'),
+    path('portal/donors/export/', views.export_donors_csv, name='export_donors_csv'),
+    path('portal/donors/outreach/<int:donor_id>/', views.donor_outreach_message, name='donor_outreach'),
+
+    # Progressive Web App (PWA) & Offline
+    path('manifest.json', views.pwa_manifest, name='pwa_manifest'),
+    path('sw.js', views.service_worker, name='service_worker'),
+    path('offline/', views.offline_view, name='offline_view'),
 ]

@@ -1,4 +1,6 @@
 import json
+import csv
+import urllib.parse
 from decimal import Decimal
 from datetime import datetime
 from django.shortcuts import render, get_object_or_404, redirect
@@ -18,7 +20,7 @@ from .models import (
 )
 from .forms import (
     DonationForm, InitiativeForm, EventForm,
-    MaintenanceExpenseForm, TrusteeForm, ActivityPhotoForm
+    MaintenanceExpenseForm, TrusteeForm, ActivityPhotoForm, DonorForm
 )
 from .razorpay_service import razorpay_service
 from .whatsapp_service import whatsapp_service
@@ -261,6 +263,32 @@ def admin_portal_view(request):
     pending_donations = Donation.objects.filter(status='PENDING').order_by('-created_at')
     recent_donations = Donation.objects.filter(status='SUCCESS').order_by('-created_at')[:20]
 
+    # Donor Categorization & Contact Management Queryset
+    donors = Donor.objects.prefetch_related('interested_activities', 'donations').all().order_by('-created_at')
+    donor_filter_category = request.GET.get('donor_category', '')
+    donor_filter_activity = request.GET.get('donor_activity', '')
+    donor_search = request.GET.get('donor_search', '')
+
+    if donor_filter_category:
+        donors = donors.filter(category=donor_filter_category)
+    if donor_filter_activity:
+        donors = donors.filter(interested_activities__id=donor_filter_activity)
+    if donor_search:
+        donors = donors.filter(
+            Q(name__icontains=donor_search) |
+            Q(phone__icontains=donor_search) |
+            Q(email__icontains=donor_search) |
+            Q(notes__icontains=donor_search)
+        )
+
+    donor_stats = {
+        'total': Donor.objects.count(),
+        'general': Donor.objects.filter(category='GENERAL').count(),
+        'activity_specific': Donor.objects.filter(category='ACTIVITY_SPECIFIC').count(),
+        'zakat': Donor.objects.filter(category='ZAKAT_SADAQAH').count(),
+        'monthly': Donor.objects.filter(category='MONTHLY_PLEDGE').count(),
+    }
+
     context = {
         'metrics': metrics,
         'initiatives': initiatives,
@@ -274,6 +302,14 @@ def admin_portal_view(request):
         'initiative_form': InitiativeForm(),
         'categories': Initiative.CATEGORY_CHOICES,
         'activities': MaintenanceActivity.objects.all(),
+        # Donor Categorization & Outreach
+        'donors': donors,
+        'donor_stats': donor_stats,
+        'donor_categories': Donor.CATEGORY_CHOICES,
+        'donor_form': DonorForm(),
+        'selected_donor_category': donor_filter_category,
+        'selected_donor_activity': donor_filter_activity,
+        'donor_search': donor_search,
     }
     return render(request, 'core/admin_portal.html', context)
 
@@ -898,3 +934,281 @@ def delete_activity_photo(request, pk):
     photo.delete()
     messages.info(request, f"Photo update '{title}' was removed.")
     return redirect('admin_portal')
+
+
+# ---------------- Donor Categorization & Contact Management (Admin Only) ---------------- #
+
+@staff_required
+def manage_donor(request, pk=None):
+    """Add or edit donor categorization, contact details, and interested activities."""
+    donor = get_object_or_404(Donor, pk=pk) if pk else None
+    if request.method == 'POST':
+        form = DonorForm(request.POST, instance=donor)
+        if form.is_valid():
+            saved = form.save()
+            messages.success(request, f"Donor profile for '{saved.name}' categorized successfully!")
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            return redirect(f"{reverse('admin_portal')}#donors")
+        else:
+            err = "; ".join([f"{k}: {v[0]}" for k, v in form.errors.items()])
+            messages.error(request, f"Failed to save donor: {err}")
+    else:
+        form = DonorForm(instance=donor)
+    return render(request, 'core/manage_form.html', {
+        'form': form,
+        'title': f"Edit Donor Category: {donor.name}" if pk else "Add New Donor & Categorize",
+        'subtitle': "Categorize donor by activities and interests, record communication logs, and manage outreach.",
+    })
+
+
+@staff_required
+def delete_donor(request, pk):
+    """Remove a donor from the contact list."""
+    donor = get_object_or_404(Donor, pk=pk)
+    name = donor.name
+    donor.delete()
+    messages.info(request, f"Donor '{name}' was removed from the directory.")
+    return redirect(f"{reverse('admin_portal')}#donors")
+
+
+@staff_required
+def export_donors_csv(request):
+    """Export filtered and categorized donor contacts as a downloadable CSV."""
+    category = request.GET.get('category', '')
+    activity_id = request.GET.get('activity', '')
+    search = request.GET.get('search', '')
+
+    donors = Donor.objects.prefetch_related('interested_activities', 'donations').all().order_by('-created_at')
+
+    if category:
+        donors = donors.filter(category=category)
+    if activity_id:
+        donors = donors.filter(interested_activities__id=activity_id)
+    if search:
+        donors = donors.filter(
+            Q(name__icontains=search) |
+            Q(phone__icontains=search) |
+            Q(email__icontains=search) |
+            Q(notes__icontains=search)
+        )
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    response['Content-Disposition'] = f'attachment; filename="meezan_trust_donors_{timestamp}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Donor ID', 'Name', 'WhatsApp Phone', 'Email', 'PAN Number',
+        'Donor Category', 'Specific Interested Activities', 'Lifetime Contributed (INR)',
+        'Pending Pledges (INR)', 'Preferred Outreach', 'WhatsApp Opt-In', 'Notes', 'Date Added'
+    ])
+
+    for d in donors:
+        acts = ", ".join([a.title for a in d.interested_activities.all()])
+        if not acts:
+            acts = "General Community Welfare" if d.category == 'GENERAL' else "All Trust Causes"
+
+        writer.writerow([
+            d.id,
+            d.name,
+            d.phone,
+            d.email,
+            d.pan_number,
+            d.get_category_display(),
+            acts,
+            float(d.total_donated),
+            float(d.pending_pledges),
+            d.get_preferred_outreach_display(),
+            'Yes' if d.opt_in_whatsapp else 'No',
+            d.notes.replace('\n', ' ') if d.notes else '',
+            d.created_at.strftime('%Y-%m-%d %H:%M')
+        ])
+
+    return response
+
+
+@staff_required
+def donor_outreach_message(request, donor_id):
+    """
+    Generate customized, activity-targeted WhatsApp appeal message based on donor's category and interests.
+    Returns direct WhatsApp link or JSON for modal previews.
+    """
+    donor = get_object_or_404(Donor, id=donor_id)
+    base_url = request.build_absolute_uri('/')[:-1]
+
+    # Activity-targeted message vs Zakat vs General message
+    if donor.interested_activities.exists():
+        top_act = donor.interested_activities.first()
+        act_title = top_act.title
+        act_link = f"{base_url}{top_act.get_absolute_url()}"
+        message_body = (
+            f"Assalamu Alaikum / Greetings {donor.name},\n\n"
+            f"Meezan Welfare & Charitable Trust is reaching out regarding our mission: *{act_title}*.\n\n"
+            f"Knowing your dedication to this cause, we invite your valuable participation and contribution to help us reach our target.\n\n"
+            f"Campaign Details & Support: {act_link}\n"
+            f"Direct SBI UPI: 8722211966@sbi (A/C: 45000364554)\n\n"
+            f"Warm regards,\n*Meezan Welfare and Charitable Trust Harapanahalli*\nReg: 4-00103-2025-26 | +91 87222 11966"
+        )
+    elif donor.category == 'ZAKAT_SADAQAH':
+        message_body = (
+            f"Assalamu Alaikum {donor.name},\n\n"
+            f"Meezan Welfare & Charitable Trust Harapanahalli operates an authentic Baitul Maal for Zakat & Sadaqah distribution to widows, orphans, and destitute families.\n\n"
+            f"You can fulfill your Zakat with 100% ground transparency:\n"
+            f"Donate Securely: {base_url}/donate/\n"
+            f"SBI UPI: 8722211966@sbi | A/C: 45000364554\n\n"
+            f"JazakAllah Khair for your ongoing support.\n*Meezan Trust Harapanahalli*\nReg: 4-00103-2025-26"
+        )
+    else:
+        message_body = (
+            f"Dear {donor.name},\n\n"
+            f"Greetings from *Meezan Welfare and Charitable Trust Harapanahalli*.\n\n"
+            f"We are actively running 9 grassroots welfare initiatives across healthcare, education, hunger relief, and municipal sanitation.\n\n"
+            f"Your valued support empowers us to serve all needy communities. Track live progress and support here:\n"
+            f"{base_url}/dashboard/\n\n"
+            f"Direct SBI UPI: 8722211966@sbi | A/C: 45000364554\n"
+            f"Thank you for being our pillar of strength!\n*Meezan Welfare and Charitable Trust*\nReg: 4-00103-2025-26"
+        )
+
+    clean_phone = donor.phone.replace('+', '').replace('-', '').replace(' ', '').strip()
+    encoded = urllib.parse.quote(message_body)
+    wa_url = f"https://wa.me/{clean_phone}?text={encoded}"
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('format') == 'json':
+        return JsonResponse({
+            'success': True,
+            'donor_name': donor.name,
+            'phone': donor.phone,
+            'category': donor.get_category_display(),
+            'message': message_body,
+            'whatsapp_url': wa_url
+        })
+
+    return redirect(wa_url)
+
+
+# ---------------- Progressive Web App (PWA) & Offline Handlers ---------------- #
+
+def pwa_manifest(request):
+    """Serves the Progressive Web App manifest with app branding and shortcuts."""
+    manifest_data = {
+        "name": "Meezan Welfare and Charitable Trust",
+        "short_name": "Meezan Trust",
+        "description": "Official portal of Meezan Welfare & Charitable Trust Harapanahalli (Reg: 4-00103-2025-26)",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#064e3b",
+        "orientation": "portrait",
+        "icons": [
+            {
+                "src": "/static/img/meezan_logo.jpg",
+                "sizes": "192x192",
+                "type": "image/jpeg",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "/static/img/meezan_logo.jpg",
+                "sizes": "512x512",
+                "type": "image/jpeg",
+                "purpose": "any maskable"
+            }
+        ],
+        "shortcuts": [
+            {
+                "name": "Donate Online",
+                "short_name": "Donate",
+                "url": "/donate/",
+                "icons": [{"src": "/static/img/meezan_logo.jpg", "sizes": "96x96"}]
+            },
+            {
+                "name": "Live Dashboard",
+                "short_name": "Dashboard",
+                "url": "/dashboard/",
+                "icons": [{"src": "/static/img/meezan_logo.jpg", "sizes": "96x96"}]
+            },
+            {
+                "name": "All Activities",
+                "short_name": "Activities",
+                "url": "/initiatives/",
+                "icons": [{"src": "/static/img/meezan_logo.jpg", "sizes": "96x96"}]
+            }
+        ]
+    }
+    return JsonResponse(manifest_data, content_type='application/manifest+json')
+
+
+def service_worker(request):
+    """Serves the root-scoped Service Worker for offline caching and instant load."""
+    sw_code = """
+const CACHE_NAME = 'meezan-trust-v2';
+const STATIC_ASSETS = [
+    '/',
+    '/initiatives/',
+    '/dashboard/',
+    '/offline/',
+    '/static/css/trust.css',
+    '/static/img/meezan_logo.jpg',
+    '/static/img/meezan_sbi_qr.jpg'
+];
+
+self.addEventListener('install', event => {
+    event.waitUntil(
+        caches.open(CACHE_NAME).then(cache => {
+            return cache.addAll(STATIC_ASSETS).catch(err => console.log('PWA cache prefetch note:', err));
+        })
+    );
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+    event.waitUntil(
+        caches.keys().then(keys => {
+            return Promise.all(
+                keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+            );
+        })
+    );
+    self.clients.claim();
+});
+
+self.addEventListener('fetch', event => {
+    if (event.request.method !== 'GET') return;
+    
+    // Ignore chrome-extension and non-http schemes
+    if (!event.request.url.startsWith('http')) return;
+
+    event.respondWith(
+        fetch(event.request)
+            .then(networkResponse => {
+                // Cache successful responses for static assets and HTML
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseClone);
+                    });
+                }
+                return networkResponse;
+            })
+            .catch(() => {
+                return caches.match(event.request).then(cachedResponse => {
+                    if (cachedResponse) return cachedResponse;
+                    if (event.request.mode === 'navigate') {
+                        return caches.match('/offline/');
+                    }
+                    return new Response('Offline content unavailable', { status: 503 });
+                });
+            })
+    );
+});
+"""
+    response = HttpResponse(sw_code.strip(), content_type='application/javascript')
+    response['Service-Worker-Allowed'] = '/'
+    return response
+
+
+def offline_view(request):
+    """Renders the friendly offline fallback page when connectivity is lost."""
+    return render(request, 'core/offline.html')

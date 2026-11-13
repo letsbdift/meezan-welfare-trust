@@ -390,13 +390,16 @@
             {% for photo in activity_photos %}
             <div class="col-lg-4 col-md-6">
                 <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden bg-white hover-shadow transition">
-                    <div class="position-relative">
-                        <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="card-img-top" style="height: 230px; object-fit: cover;">
+                    <div class="position-relative image-zoom-wrap gallery-lightbox-trigger" data-lightbox="true" data-img-src="{{ photo.image.url }}" data-title="{{ photo.title }}" data-caption="{{ photo.caption }}" title="Click to view high-resolution photo">
+                        <img src="{{ photo.image.url }}" alt="{{ photo.title }}" class="card-img-top image-transition-smooth" style="height: 230px; object-fit: cover;" loading="lazy" decoding="async">
                         {% if photo.initiative %}
                         <span class="position-absolute top-0 start-0 m-3 badge bg-dark bg-opacity-75 text-white small">
                             {{ photo.initiative.title|truncatechars:28 }}
                         </span>
                         {% endif %}
+                        <span class="position-absolute bottom-0 end-0 m-3 badge bg-dark bg-opacity-50 text-white rounded-pill px-2 py-1 small">
+                            <i class="fa-solid fa-magnifying-glass-plus me-1"></i> View Photo
+                        </span>
                     </div>
                     <div class="card-body p-4 d-flex flex-column">
                         <div class="d-flex justify-content-between text-muted small mb-2" style="font-size: 0.78rem;">

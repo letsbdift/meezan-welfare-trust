@@ -102,6 +102,11 @@
                         <i class="fa-solid fa-camera-retro text-success me-1"></i> Field Photos & Stories ({{ activity_photos.count }})
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 fw-bold text-dark border-0" id="donors-tab" data-bs-toggle="tab" data-bs-target="#donors" type="button" role="tab">
+                        <i class="fa-solid fa-users-viewfinder text-primary me-1"></i> Donors & Categorization ({{ donor_stats.total }})
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -880,6 +885,438 @@
                             </button>
                         </div>
                         {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 8. DONOR CATEGORIZATION & OUTREACH MANAGEMENT -->
+                <div class="tab-pane fade" id="donors" role="tabpanel">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">
+                                <i class="fa-solid fa-users-viewfinder text-primary me-2"></i> Donor Categorization & Contact Management
+                            </h5>
+                            <p class="text-muted small mb-0">
+                                Categorize donors based on specific activities or general welfare, manage contact lists, and run targeted WhatsApp donation appeals.
+                            </p>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{% url 'export_donors_csv' %}?category={{ selected_donor_category }}&activity={{ selected_donor_activity }}&search={{ donor_search }}" class="btn btn-outline-success rounded-pill px-3 fw-bold">
+                                <i class="fa-solid fa-file-csv me-1"></i> Export Contacts CSV
+                            </a>
+                            <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addDonorModal">
+                                <i class="fa-solid fa-user-plus me-1"></i> Add Donor & Categorize
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Donor Segmentation Statistics Pills -->
+                    <div class="row g-2 mb-4">
+                        <div class="col-6 col-md">
+                            <div class="p-3 bg-light rounded-4 border text-center h-100">
+                                <span class="d-block text-secondary small fw-bold text-uppercase">Total Donors</span>
+                                <h4 class="fw-extrabold text-dark mb-0">{{ donor_stats.total }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md">
+                            <div class="p-3 bg-light rounded-4 border text-center h-100 border-start border-4 border-primary">
+                                <span class="d-block text-secondary small fw-bold text-uppercase">General Welfare</span>
+                                <h4 class="fw-extrabold text-primary mb-0">{{ donor_stats.general }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md">
+                            <div class="p-3 bg-light rounded-4 border text-center h-100 border-start border-4 border-success">
+                                <span class="d-block text-secondary small fw-bold text-uppercase">Activity-Specific</span>
+                                <h4 class="fw-extrabold text-success mb-0">{{ donor_stats.activity_specific }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md">
+                            <div class="p-3 bg-light rounded-4 border text-center h-100 border-start border-4 border-warning">
+                                <span class="d-block text-secondary small fw-bold text-uppercase">Zakat & Sadaqah</span>
+                                <h4 class="fw-extrabold text-warning mb-0">{{ donor_stats.zakat }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md">
+                            <div class="p-3 bg-light rounded-4 border text-center h-100 border-start border-4 border-info">
+                                <span class="d-block text-secondary small fw-bold text-uppercase">Monthly Sustaining</span>
+                                <h4 class="fw-extrabold text-info mb-0">{{ donor_stats.monthly }}</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter & Search Bar -->
+                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-light p-3">
+                        <form method="GET" action="{% url 'admin_portal' %}#donors" class="row g-2 align-items-center">
+                            <div class="col-md-3">
+                                <label class="small fw-bold text-muted d-block">Filter by Category:</label>
+                                <select name="donor_category" class="form-select form-select-sm rounded-pill" onchange="this.form.submit()">
+                                    <option value="">All Categories ({{ donor_stats.total }})</option>
+                                    {% for code, label in donor_categories %}
+                                    <option value="{{ code }}" {% if selected_donor_category == code %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="small fw-bold text-muted d-block">Filter by Specific Activity:</label>
+                                <select name="donor_activity" class="form-select form-select-sm rounded-pill" onchange="this.form.submit()">
+                                    <option value="">All Causes / Activities</option>
+                                    {% for init in initiatives %}
+                                    <option value="{{ init.id }}" {% if selected_donor_activity == init.id|stringformat:"s" %}selected{% endif %}>{{ init.title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="small fw-bold text-muted d-block">Search Donors:</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="donor_search" class="form-control rounded-start-pill" placeholder="Name, phone, or notes..." value="{{ donor_search }}">
+                                    <button class="btn btn-dark rounded-end-pill px-3" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+                                </div>
+                            </div>
+                            <div class="col-md-2 text-md-end pt-3 pt-md-0">
+                                {% if selected_donor_category or selected_donor_activity or donor_search %}
+                                <a href="{% url 'admin_portal' %}#donors" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                    <i class="fa-solid fa-rotate-left me-1"></i> Reset
+                                </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Add Donor Modal -->
+                    <div class="modal fade" id="addDonorModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content rounded-4 border-0 shadow-lg">
+                                <form action="{% url 'donor_create' %}" method="POST">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{% url 'admin_portal' %}#donors">
+                                    <div class="modal-header text-white" style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%);">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fa-solid fa-user-plus text-warning fs-5"></i>
+                                            <h5 class="modal-title fw-bold mb-0">Add New Donor & Categorize</h5>
+                                        </div>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-4 text-start">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold small text-dark">Full Name *</label>
+                                                <input type="text" name="name" class="form-control rounded-3" placeholder="e.g. Janab Mohammed Ismail" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold small text-dark">WhatsApp Number * (with country code)</label>
+                                                <input type="text" name="phone" class="form-control rounded-3" placeholder="+91 98450 XXXXX" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold small text-dark">Email Address</label>
+                                                <input type="email" name="email" class="form-control rounded-3" placeholder="donor@example.com">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold small text-dark">PAN Number (for 80G tax receipt)</label>
+                                                <input type="text" name="pan_number" class="form-control rounded-3" placeholder="ABCDE1234F">
+                                            </div>
+
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold small text-dark">Donor Category *</label>
+                                                <select name="category" class="form-select rounded-3">
+                                                    {% for code, label in donor_categories %}
+                                                    <option value="{{ code }}">{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <div class="form-text small">Select 'General' for overall charity, or select specific activities below.</div>
+                                            </div>
+
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold small text-dark d-block">
+                                                    Interested Activities / Causes:
+                                                    <span class="text-muted fw-normal small">(Select all activities this donor prefers to support)</span>
+                                                </label>
+                                                <div class="p-3 bg-light rounded-3 border" style="max-height: 200px; overflow-y: auto;">
+                                                    {% for init in initiatives %}
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input" type="checkbox" name="interested_activities" value="{{ init.id }}" id="addAct{{ init.id }}">
+                                                        <label class="form-check-label small fw-semibold text-dark" for="addAct{{ init.id }}">
+                                                            {{ init.title }}
+                                                            <span class="badge bg-light text-muted border ms-1">{{ init.get_category_display }}</span>
+                                                        </label>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold small text-dark">Internal Staff Notes / History</label>
+                                                <textarea name="notes" rows="3" class="form-control rounded-3" placeholder="Preferences, pledge commitments, best time to call, family details..."></textarea>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold small text-dark">Preferred Outreach Channel</label>
+                                                <select name="preferred_outreach" class="form-select rounded-3">
+                                                    <option value="WHATSAPP">WhatsApp Message</option>
+                                                    <option value="CALL">Direct Phone Call</option>
+                                                    <option value="EMAIL">Email</option>
+                                                    <option value="SMS">SMS</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6 d-flex align-items-center pt-3">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" name="opt_in_whatsapp" id="addOptIn" checked>
+                                                    <label class="form-check-label fw-bold text-dark small" for="addOptIn">Agreed to receive WhatsApp updates</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer bg-light p-3">
+                                        <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                                            <i class="fa-solid fa-check me-1"></i> Save Donor Profile
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Donors Table Display -->
+                    <div class="table-responsive rounded-4 border bg-white shadow-sm mb-4">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Donor Name & Contact</th>
+                                    <th>Category</th>
+                                    <th>Interested Activities / Causes</th>
+                                    <th>Contributions</th>
+                                    <th>Outreach Channel</th>
+                                    <th>Staff Notes</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for d in donors %}
+                                <tr>
+                                    <td>
+                                        <strong class="text-dark">{{ d.name }}</strong>
+                                        <div class="small text-muted font-monospace"><i class="fa-brands fa-whatsapp text-success me-1"></i>{{ d.phone }}</div>
+                                        {% if d.email %}<div class="text-secondary small">{{ d.email }}</div>{% endif %}
+                                    </td>
+                                    <td>
+                                        {% if d.category == 'GENERAL' %}
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ d.get_category_display }}</span>
+                                        {% elif d.category == 'ACTIVITY_SPECIFIC' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">{{ d.get_category_display }}</span>
+                                        {% elif d.category == 'ZAKAT_SADAQAH' %}
+                                        <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25">{{ d.get_category_display }}</span>
+                                        {% elif d.category == 'MONTHLY_PLEDGE' %}
+                                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">{{ d.get_category_display }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary-subtle text-secondary border">{{ d.get_category_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td style="max-width: 260px;">
+                                        {% with acts=d.interested_activities.all %}
+                                            {% if acts %}
+                                                {% for a in acts %}
+                                                <span class="badge bg-light text-dark border mb-1 d-inline-block text-truncate" style="max-width: 220px;" title="{{ a.title }}">
+                                                    &bull; {{ a.title }}
+                                                </span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted small">
+                                                    {% if d.category == 'GENERAL' %}
+                                                        <i class="fa-solid fa-hands-holding-heart text-primary me-1"></i> General Community Welfare
+                                                    {% else %}
+                                                        All Trust Causes
+                                                    {% endif %}
+                                                </span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-success small">₹{{ d.total_donated|floatformat:0|intcomma }}</div>
+                                        {% if d.pending_pledges > 0 %}
+                                        <span class="badge bg-warning-subtle text-warning small">₹{{ d.pending_pledges|floatformat:0|intcomma }} due</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-secondary border small">
+                                            {% if d.preferred_outreach == 'WHATSAPP' %}<i class="fa-brands fa-whatsapp text-success me-1"></i>{% endif %}
+                                            {{ d.get_preferred_outreach_display }}
+                                        </span>
+                                    </td>
+                                    <td style="max-width: 200px;">
+                                        <span class="small text-muted d-block text-truncate" title="{{ d.notes }}">{{ d.notes|default:"—" }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex justify-content-end gap-1">
+                                            <!-- Targeted WhatsApp Appeal Button -->
+                                            <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2 py-1" data-bs-toggle="modal" data-bs-target="#outreachModal{{ d.id }}" title="Targeted WhatsApp Outreach">
+                                                <i class="fa-brands fa-whatsapp me-1"></i> Appeal
+                                            </button>
+                                            <!-- Edit Donor Modal Trigger -->
+                                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1" data-bs-toggle="modal" data-bs-target="#editDonorModal{{ d.id }}" title="Edit Category">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <!-- Delete Donor Trigger -->
+                                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-1" data-bs-toggle="modal" data-bs-target="#deleteDonorModal{{ d.id }}" title="Delete Contact">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- Targeted WhatsApp Appeal Modal -->
+                                        <div class="modal fade" id="outreachModal{{ d.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content rounded-4 border-0 shadow">
+                                                    <div class="modal-header text-white" style="background: #128C7E;">
+                                                        <h5 class="modal-title fw-bold"><i class="fa-brands fa-whatsapp me-2"></i> Targeted Donation Appeal: {{ d.name }}</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body text-start p-4">
+                                                        <div class="mb-3">
+                                                            <span class="badge bg-light text-dark border me-1">Category: {{ d.get_category_display }}</span>
+                                                            <span class="badge bg-light text-dark border">WhatsApp: {{ d.phone }}</span>
+                                                        </div>
+                                                        <label class="form-label fw-bold small text-dark">Personalized Appeal Message (Preview):</label>
+                                                        <div class="p-3 bg-light rounded-3 border small font-monospace" style="white-space: pre-wrap; max-height: 220px; overflow-y: auto;">
+Assalamu Alaikum / Greetings {{ d.name }},
+
+Meezan Welfare & Charitable Trust Harapanahalli is reaching out regarding our community mission{% if d.interested_activities.exists %}: *{{ d.interested_activities.first.title }}*{% else %} across our 9 grassroots activities{% endif %}.
+
+Knowing your dedication to this cause, we invite your valuable participation and contribution to help our needy families.
+
+Donate Securely: {{ request.scheme }}://{{ request.get_host }}{% if d.interested_activities.exists %}{{ d.interested_activities.first.get_absolute_url }}{% else %}/donate/{% endif %}
+Direct SBI UPI: 8722211966@sbi (A/C: 45000364554)
+
+Warm regards,
+*Meezan Welfare and Charitable Trust, Harapanahalli*
+Reg: 4-00103-2025-26 | +91 87222 11966</div>
+                                                    </div>
+                                                    <div class="modal-footer bg-light p-3">
+                                                        <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                                        <a href="{% url 'donor_outreach' d.id %}" target="_blank" class="btn btn-success rounded-pill px-4 fw-bold">
+                                                            <i class="fa-brands fa-whatsapp me-1"></i> Open in WhatsApp
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Edit Donor Category Modal -->
+                                        <div class="modal fade" id="editDonorModal{{ d.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                                <div class="modal-content rounded-4 border-0 shadow">
+                                                    <form action="{% url 'donor_edit' d.id %}" method="POST">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="next" value="{% url 'admin_portal' %}#donors">
+                                                        <div class="modal-header bg-dark text-white">
+                                                            <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-pen me-2 text-warning"></i> Edit Donor & Categorization: {{ d.name }}</h5>
+                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body p-4 text-start">
+                                                            <div class="row g-3">
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label fw-bold small text-dark">Full Name *</label>
+                                                                    <input type="text" name="name" class="form-control rounded-3" value="{{ d.name }}" required>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label fw-bold small text-dark">WhatsApp Number *</label>
+                                                                    <input type="text" name="phone" class="form-control rounded-3" value="{{ d.phone }}" required>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label fw-bold small text-dark">Email Address</label>
+                                                                    <input type="email" name="email" class="form-control rounded-3" value="{{ d.email }}">
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label fw-bold small text-dark">PAN Number</label>
+                                                                    <input type="text" name="pan_number" class="form-control rounded-3" value="{{ d.pan_number }}">
+                                                                </div>
+                                                                <div class="col-12">
+                                                                    <label class="form-label fw-bold small text-dark">Donor Category *</label>
+                                                                    <select name="category" class="form-select rounded-3">
+                                                                        {% for code, label in donor_categories %}
+                                                                        <option value="{{ code }}" {% if d.category == code %}selected{% endif %}>{{ label }}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-12">
+                                                                    <label class="form-label fw-bold small text-dark d-block">
+                                                                        Interested Activities / Causes:
+                                                                    </label>
+                                                                    <div class="p-3 bg-light rounded-3 border" style="max-height: 180px; overflow-y: auto;">
+                                                                        {% for init in initiatives %}
+                                                                        <div class="form-check mb-2">
+                                                                            <input class="form-check-input" type="checkbox" name="interested_activities" value="{{ init.id }}" id="editAct{{ d.id }}_{{ init.id }}" {% if init in d.interested_activities.all %}checked{% endif %}>
+                                                                            <label class="form-check-label small fw-semibold text-dark" for="editAct{{ d.id }}_{{ init.id }}">
+                                                                                {{ init.title }}
+                                                                            </label>
+                                                                        </div>
+                                                                        {% endfor %}
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-12">
+                                                                    <label class="form-label fw-bold small text-dark">Internal Staff Notes</label>
+                                                                    <textarea name="notes" rows="3" class="form-control rounded-3">{{ d.notes }}</textarea>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label fw-bold small text-dark">Preferred Outreach</label>
+                                                                    <select name="preferred_outreach" class="form-select rounded-3">
+                                                                        <option value="WHATSAPP" {% if d.preferred_outreach == 'WHATSAPP' %}selected{% endif %}>WhatsApp Message</option>
+                                                                        <option value="CALL" {% if d.preferred_outreach == 'CALL' %}selected{% endif %}>Direct Phone Call</option>
+                                                                        <option value="EMAIL" {% if d.preferred_outreach == 'EMAIL' %}selected{% endif %}>Email</option>
+                                                                        <option value="SMS" {% if d.preferred_outreach == 'SMS' %}selected{% endif %}>SMS</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-6 d-flex align-items-center pt-3">
+                                                                    <div class="form-check form-switch">
+                                                                        <input class="form-check-input" type="checkbox" name="opt_in_whatsapp" id="editOptIn{{ d.id }}" {% if d.opt_in_whatsapp %}checked{% endif %}>
+                                                                        <label class="form-check-label fw-bold text-dark small" for="editOptIn{{ d.id }}">WhatsApp Opt-In</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer bg-light p-3">
+                                                            <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">Update Category & Info</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Delete Donor Modal -->
+                                        <div class="modal fade" id="deleteDonorModal{{ d.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content rounded-4 border-0 shadow">
+                                                    <form action="{% url 'donor_delete' d.id %}" method="POST">
+                                                        {% csrf_token %}
+                                                        <div class="modal-header bg-danger text-white">
+                                                            <h5 class="modal-title fw-bold"><i class="fa-solid fa-trash me-1"></i> Delete Donor Contact</h5>
+                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body p-4 text-start">
+                                                            <p>Are you sure you want to remove <strong>{{ d.name }}</strong> ({{ d.phone }}) from the donor directory?</p>
+                                                            <p class="text-muted small mb-0">Past completed donation records will remain preserved for audit compliance.</p>
+                                                        </div>
+                                                        <div class="modal-footer bg-light">
+                                                            <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Confirm Delete</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-5 text-muted">
+                                        <i class="fa-solid fa-users-slash fa-3x mb-3 text-secondary opacity-50 d-block"></i>
+                                        No donors match the selected category or activity filters.
+                                        <div class="mt-2">
+                                            <a href="{% url 'admin_portal' %}#donors" class="btn btn-sm btn-outline-primary rounded-pill px-3">Clear Filters</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 

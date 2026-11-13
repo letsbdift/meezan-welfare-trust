@@ -113,3 +113,26 @@ class ActivityPhotoForm(forms.ModelForm):
             'date_taken': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'is_featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+
+class DonorForm(forms.ModelForm):
+    class Meta:
+        model = Donor
+        fields = [
+            'name', 'phone', 'email', 'pan_number', 'category',
+            'interested_activities', 'preferred_outreach', 'notes',
+            'address', 'city', 'opt_in_whatsapp'
+        ]
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Donor Full Name', 'required': 'required'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+91 98XXXXXXXX (WhatsApp)', 'required': 'required'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'donor@example.com'}),
+            'pan_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ABCDE1234F (Optional)'}),
+            'category': forms.Select(attrs={'class': 'form-select', 'id': 'donorCategorySelect'}),
+            'interested_activities': forms.SelectMultiple(attrs={'class': 'form-select', 'size': 5}),
+            'preferred_outreach': forms.Select(attrs={'class': 'form-select'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Preferences, specific causes of interest, communication history...'}),
+            'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Address / Ward'}),
+            'city': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Harapanahalli / etc.'}),
+            'opt_in_whatsapp': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }

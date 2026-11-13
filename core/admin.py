@@ -49,9 +49,10 @@ class TrusteeAdmin(admin.ModelAdmin):
 
 @admin.register(Donor)
 class DonorAdmin(admin.ModelAdmin):
-    list_display = ('name', 'phone', 'email', 'pan_number', 'get_total_donated', 'opt_in_whatsapp', 'created_at')
-    search_fields = ('name', 'phone', 'email', 'pan_number')
-    list_filter = ('opt_in_whatsapp', 'created_at')
+    list_display = ('name', 'phone', 'category', 'get_total_donated', 'preferred_outreach', 'opt_in_whatsapp', 'created_at')
+    search_fields = ('name', 'phone', 'email', 'pan_number', 'notes')
+    list_filter = ('category', 'preferred_outreach', 'opt_in_whatsapp', 'created_at')
+    filter_horizontal = ('interested_activities',)
 
     def get_total_donated(self, obj):
         return f"₹{obj.total_donated:,.2f}"

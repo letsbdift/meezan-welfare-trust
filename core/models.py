@@ -187,15 +187,55 @@ class Trustee(models.Model):
 
 
 class Donor(models.Model):
+    CATEGORY_CHOICES = [
+        ('GENERAL', 'General Welfare Supporter'),
+        ('ACTIVITY_SPECIFIC', 'Activity-Specific Supporter'),
+        ('ZAKAT_SADAQAH', 'Zakat & Sadaqah Contributor'),
+        ('MONTHLY_PLEDGE', 'Monthly Sustaining Donor'),
+        ('EMERGENCY_RELIEF', 'Emergency Relief Contributor'),
+        ('CORPORATE_CSR', 'Corporate & CSR Partner'),
+        ('HIGH_VALUE', 'High-Value / Major Patron'),
+    ]
+
+    OUTREACH_CHOICES = [
+        ('WHATSAPP', 'WhatsApp Message'),
+        ('CALL', 'Direct Phone Call'),
+        ('EMAIL', 'Email Newsletter'),
+        ('SMS', 'Direct SMS'),
+    ]
+
     name = models.CharField(max_length=150)
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=25, help_text="Phone number with country code for WhatsApp (e.g. +919820012345)")
     pan_number = models.CharField(max_length=15, blank=True, verbose_name="PAN (for 80G Tax Exemption)")
     address = models.CharField(max_length=255, blank=True)
     city = models.CharField(max_length=100, blank=True)
+    category = models.CharField(
+        max_length=30,
+        choices=CATEGORY_CHOICES,
+        default='GENERAL',
+        help_text="Donor interest category: General, Activity-Specific, Zakat, etc."
+    )
+    interested_activities = models.ManyToManyField(
+        'Initiative',
+        blank=True,
+        related_name='interested_donors',
+        help_text="Specific trust activities / causes this donor is interested in supporting"
+    )
+    notes = models.TextField(
+        blank=True,
+        help_text="Internal staff notes regarding donor preferences, communication logs, and special instructions"
+    )
+    preferred_outreach = models.CharField(
+        max_length=20,
+        choices=OUTREACH_CHOICES,
+        default='WHATSAPP',
+        help_text="Primary preferred communication channel"
+    )
     is_anonymous = models.BooleanField(default=False)
     opt_in_whatsapp = models.BooleanField(default=True, help_text="Agreed to receive WhatsApp updates")
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -214,6 +254,18 @@ class Donor(models.Model):
         from django.db.models import Sum
         val = self.donations.filter(status='PENDING').aggregate(total=Sum('amount'))['total']
         return val or Decimal('0.00')
+
+    @property
+    def donation_count(self):
+        return self.donations.filter(status='SUCCESS').count()
+
+    def get_interested_activities_display(self):
+        acts = list(self.interested_activities.values_list('title', flat=True))
+        if acts:
+            return ", ".join(acts)
+        if self.category == 'GENERAL':
+            return "General Community Welfare"
+        return "All Trust Causes"
 
 
 class Donation(models.Model):
