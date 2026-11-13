@@ -232,10 +232,10 @@ class Donation(models.Model):
 
     def save(self, *args, **kwargs):
         if self.status == 'SUCCESS' and not self.receipt_number:
-            # Generate official receipt number e.g. TR-202611-ABCD
+            # Generate official receipt number e.g. MEEZAN-REC-202611-ABCD
             today_str = timezone.now().strftime('%Y%m')
-            code = uuid.uuid4().hex[:5].upper()
-            self.receipt_number = f"TR-{today_str}-{code}"
+            code = uuid.uuid4().hex[:6].upper()
+            self.receipt_number = f"MEEZAN-REC-{today_str}-{code}"
         elif self.status != 'SUCCESS' and not self.receipt_number:
             self.receipt_number = None
         super().save(*args, **kwargs)

@@ -1,0 +1,506 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Admin Management Portal | Meezan Welfare and Charitable Trust{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Top Admin Header -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%);">
+        <div class="card-body p-4 text-white d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">
+                    <i class="fa-solid fa-shield-halved me-1"></i> Trustee & Staff Control Hub
+                </span>
+                <h2 class="fw-bold mb-1">Meezan Trust Management Portal</h2>
+                <p class="text-white-50 mb-0">Welcome, <strong>{{ request.user.first_name|default:request.user.username }}</strong>. Real-time control of financial targets, activities, events, expenses, and trustee profiles.</p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-light rounded-pill px-3 py-2 fw-semibold">
+                    <i class="fa-solid fa-gauge-high me-1"></i> Public Dashboard
+                </a>
+                <a href="/admin/" target="_blank" class="btn btn-warning rounded-pill px-3 py-2 fw-bold text-dark">
+                    <i class="fa-solid fa-database me-1"></i> Django Admin
+                </a>
+                <a href="{% url 'admin_logout' %}" class="btn btn-danger rounded-pill px-3 py-2 fw-semibold">
+                    <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Logout
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Financial Summary Cards (All 3 Key Metrics) -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-5 border-primary">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-secondary small fw-bold text-uppercase">Total Expected Budget</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary"><i class="fa-solid fa-bullseye"></i> Goal</span>
+                </div>
+                <h3 class="fw-extrabold text-dark mb-1">₹{{ metrics.total_expected|floatformat:0|intcomma }}</h3>
+                <span class="text-muted small">Sum of all active initiative targets + pending pledges</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-5 border-success">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-secondary small fw-bold text-uppercase">Total Raised in Trust</span>
+                    <span class="badge bg-success bg-opacity-10 text-success"><i class="fa-solid fa-check"></i> Verified</span>
+                </div>
+                <h3 class="fw-extrabold text-success mb-1">₹{{ metrics.total_raised|floatformat:0|intcomma }}</h3>
+                <span class="text-muted small">{{ metrics.total_donations_count }} successful receipts across {{ metrics.donor_count }} donors</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-5 border-warning">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-secondary small fw-bold text-uppercase">Pending Pledges</span>
+                    <span class="badge bg-warning bg-opacity-10 text-warning"><i class="fa-solid fa-hourglass-half"></i> Due</span>
+                </div>
+                <h3 class="fw-extrabold text-warning mb-1">₹{{ metrics.total_pending|floatformat:0|intcomma }}</h3>
+                <span class="text-muted small">Target balance + committed pledges awaiting fulfillment</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nav Tabs for Admin Sections -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+        <div class="card-header bg-white border-bottom p-0">
+            <ul class="nav nav-tabs nav-fill card-header-tabs m-0" id="portalTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active py-3 fw-bold text-dark border-0 border-bottom border-3 border-success" id="financials-tab" data-bs-toggle="tab" data-bs-target="#financials" type="button" role="tab">
+                        <i class="fa-solid fa-indian-rupee-sign text-success me-1"></i> Financial Figures & Targets
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 fw-bold text-dark border-0" id="activities-tab" data-bs-toggle="tab" data-bs-target="#activities" type="button" role="tab">
+                        <i class="fa-solid fa-hand-holding-heart text-primary me-1"></i> Activities & Initiatives
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 fw-bold text-dark border-0" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">
+                        <i class="fa-solid fa-calendar-check text-info me-1"></i> Events ({{ events.count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 fw-bold text-dark border-0" id="expenses-tab" data-bs-toggle="tab" data-bs-target="#expenses" type="button" role="tab">
+                        <i class="fa-solid fa-chart-pie text-warning me-1"></i> Maintenance Expenses
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 fw-bold text-dark border-0" id="trustees-tab" data-bs-toggle="tab" data-bs-target="#trustees" type="button" role="tab">
+                        <i class="fa-solid fa-users-gear text-secondary me-1"></i> Trustees ({{ trustees.count }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link py-3 fw-bold text-dark border-0" id="pledges-tab" data-bs-toggle="tab" data-bs-target="#pledges" type="button" role="tab">
+                        <i class="fa-solid fa-envelope-open-text text-danger me-1"></i> Pending Pledges ({{ pending_donations.count }})
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-4 bg-white">
+            <div class="tab-content" id="portalTabContent">
+
+                <!-- 1. FINANCIAL FIGURES & TARGETS -->
+                <div class="tab-pane fade show active" id="financials" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1">Financial Figures & Target Budget Allocations</h5>
+                            <p class="text-muted small mb-0">Modify expected budgets and active status for any initiative directly below.</p>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Initiative / Activity</th>
+                                    <th>Category</th>
+                                    <th>Target Budget</th>
+                                    <th>Raised to Date</th>
+                                    <th>Progress</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Quick Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for init in initiatives %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ init.title }}</strong>
+                                        {% if init.is_featured %}<span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Featured</span>{% endif %}
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">{{ init.get_category_display }}</span></td>
+                                    <td>
+                                        <span class="fw-bold text-primary">₹{{ init.target_amount|floatformat:0|intcomma }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">₹{{ init.raised_amount|floatformat:0|intcomma }}</span>
+                                    </td>
+                                    <td style="min-width: 140px;">
+                                        <div class="progress" style="height: 7px;">
+                                            <div class="progress-bar bg-success" style="width: {{ init.progress_percentage }}%;"></div>
+                                        </div>
+                                        <span class="small text-muted">{{ init.progress_percentage }}% funded</span>
+                                    </td>
+                                    <td>
+                                        {% if init.is_active %}
+                                        <span class="badge bg-success-subtle text-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#targetModal{{ init.id }}">
+                                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit Target
+                                        </button>
+                                        <a href="{% url 'initiative_edit' init.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-2" title="Full Edit">
+                                            <i class="fa-solid fa-gear"></i>
+                                        </a>
+
+                                        <!-- Target Edit Modal -->
+                                        <div class="modal fade" id="targetModal{{ init.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content rounded-4 border-0 shadow">
+                                                    <form method="POST" action="{% url 'update_financial_target' init.id %}">
+                                                        {% csrf_token %}
+                                                        <div class="modal-header bg-light">
+                                                            <h5 class="modal-title fw-bold text-dark">
+                                                                <i class="fa-solid fa-indian-rupee-sign text-success me-1"></i> Update Target: {{ init.title }}
+                                                            </h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body text-start">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold small text-dark">Expected Target Budget (INR):</label>
+                                                                <div class="input-group">
+                                                                    <span class="input-group-text bg-light fw-bold">₹</span>
+                                                                    <input type="number" name="target_amount" class="form-control fw-bold fs-5" value="{{ init.target_amount|floatformat:0 }}" min="1000" step="500" required>
+                                                                </div>
+                                                                <div class="form-text small">Updating this directly adjusts the Live Total Expected Budget on Home & Dashboard.</div>
+                                                            </div>
+                                                            <div class="form-check form-switch mb-3">
+                                                                <input class="form-check-input" type="checkbox" name="is_active" id="activeCheck{{ init.id }}" {% if init.is_active %}checked{% endif %}>
+                                                                <label class="form-check-label fw-bold text-dark" for="activeCheck{{ init.id }}">
+                                                                    Active Initiative (Included in Expected Budget & Home)
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer bg-light">
+                                                            <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">Save Changes</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. ACTIVITIES & INITIATIVES -->
+                <div class="tab-pane fade" id="activities" role="tabpanel">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">Meezan Trust Initiatives & Activities</h5>
+                            <p class="text-muted small mb-0">Manage details, photo banners, descriptions, and fundraising goals.</p>
+                        </div>
+                        <a href="{% url 'initiative_create' %}" class="btn btn-success rounded-pill px-3 fw-bold">
+                            <i class="fa-solid fa-plus me-1"></i> Add New Activity / Initiative
+                        </a>
+                    </div>
+
+                    <div class="row g-3">
+                        {% for init in initiatives %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border rounded-4 shadow-sm overflow-hidden">
+                                {% if init.image %}
+                                <img src="{{ init.image.url }}" class="card-img-top" style="height: 160px; object-fit: cover;" alt="{{ init.title }}">
+                                {% else %}
+                                <div class="bg-light p-4 text-center text-muted" style="height: 160px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-hands-holding-heart fa-3x text-success opacity-50"></i>
+                                </div>
+                                {% endif %}
+                                <div class="card-body p-3 d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-light text-dark border">{{ init.get_category_display }}</span>
+                                        {% if init.is_active %}
+                                        <span class="badge bg-success-subtle text-success">Active</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">{{ init.title }}</h6>
+                                    <p class="text-muted small flex-grow-1 mb-2">{{ init.description|truncatewords:15 }}</p>
+                                    <div class="d-flex justify-content-between small text-muted mb-2">
+                                        <span>Target: <strong>₹{{ init.target_amount|floatformat:0|intcomma }}</strong></span>
+                                        <span class="text-success">Raised: <strong>₹{{ init.raised_amount|floatformat:0|intcomma }}</strong></span>
+                                    </div>
+                                    <div class="border-top pt-2 d-flex justify-content-between">
+                                        <a href="{% url 'initiative_detail' init.slug %}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2">
+                                            <i class="fa-solid fa-eye me-1"></i> View
+                                        </a>
+                                        <a href="{% url 'initiative_edit' init.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 3. EVENTS & OUTREACH -->
+                <div class="tab-pane fade" id="events" role="tabpanel">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">Trust Events & Community Gatherings</h5>
+                            <p class="text-muted small mb-0">Create events and broadcast WhatsApp reminders to all opted-in donors.</p>
+                        </div>
+                        <a href="{% url 'event_create' %}" class="btn btn-success rounded-pill px-3 fw-bold">
+                            <i class="fa-solid fa-calendar-plus me-1"></i> Add New Event
+                        </a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Event Title</th>
+                                    <th>Date & Time</th>
+                                    <th>Venue</th>
+                                    <th>Status</th>
+                                    <th>WhatsApp Broadcast</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for event in events %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ event.title }}</strong>
+                                        <span class="d-block small text-muted">{{ event.description|truncatewords:8 }}</span>
+                                    </td>
+                                    <td>{{ event.event_date|date:"d M Y, h:i A" }}</td>
+                                    <td class="small">{{ event.location }}</td>
+                                    <td>
+                                        {% if event.status == 'UPCOMING' %}
+                                        <span class="badge bg-success-subtle text-success">Upcoming</span>
+                                        {% elif event.status == 'ONGOING' %}
+                                        <span class="badge bg-warning-subtle text-warning">Ongoing</span>
+                                        {% else %}
+                                        <span class="badge bg-light text-muted border">Completed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if event.whatsapp_broadcast_sent %}
+                                        <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-check-double me-1"></i> Broadcasted</span>
+                                        {% else %}
+                                        <a href="{% url 'broadcast_event_whatsapp' event.id %}" class="btn btn-sm btn-outline-success rounded-pill px-2" onclick="return confirm('Broadcast WhatsApp invitation for this event to all registered donors?');">
+                                            <i class="fa-brands fa-whatsapp me-1"></i> Broadcast Now
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'event_edit' event.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No events created yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 4. MONTHLY MAINTENANCE EXPENSES -->
+                <div class="tab-pane fade" id="expenses" role="tabpanel">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">Monthly Maintenance & Operational Expenses</h5>
+                            <p class="text-muted small mb-0">Track itemized operational costs for healthcare clinics, water drives, ration logistics, etc.</p>
+                        </div>
+                        <a href="{% url 'expense_create' %}" class="btn btn-success rounded-pill px-3 fw-bold">
+                            <i class="fa-solid fa-receipt me-1"></i> Log Maintenance Expense
+                        </a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Activity Category</th>
+                                    <th>Title / Item Description</th>
+                                    <th>Date</th>
+                                    <th>Period</th>
+                                    <th>Amount</th>
+                                    <th>Voucher</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exp in expenses %}
+                                <tr>
+                                    <td>
+                                        <span class="badge" style="background-color: {{ exp.activity.color_hex|default:'#059669' }}; color: #fff;">
+                                            {{ exp.activity.name }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ exp.title }}</strong>
+                                        {% if exp.vendor_payee %}<span class="d-block small text-muted">Vendor: {{ exp.vendor_payee }}</span>{% endif %}
+                                    </td>
+                                    <td class="small">{{ exp.date_incurred|date:"d M Y" }}</td>
+                                    <td class="small">{{ exp.get_month_name }} {{ exp.year }}</td>
+                                    <td class="fw-bold text-danger">₹{{ exp.amount|floatformat:2|intcomma }}</td>
+                                    <td>
+                                        {% if exp.receipt_voucher %}
+                                        <a href="{{ exp.receipt_voucher.url }}" target="_blank" class="badge bg-light text-primary border text-decoration-none">
+                                            <i class="fa-solid fa-file-invoice me-1"></i> View Doc
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted small">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'expense_edit' exp.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">No maintenance expenses logged yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 5. TRUSTEE PROFILES -->
+                <div class="tab-pane fade" id="trustees" role="tabpanel">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">Meezan Trust Board of Trustees</h5>
+                            <p class="text-muted small mb-0">Add and update board member profiles, biographical details, and social media handles.</p>
+                        </div>
+                        <a href="{% url 'trustee_create' %}" class="btn btn-success rounded-pill px-3 fw-bold">
+                            <i class="fa-solid fa-user-plus me-1"></i> Add New Trustee
+                        </a>
+                    </div>
+
+                    <div class="row g-3">
+                        {% for trustee in trustees %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border rounded-4 shadow-sm p-3">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    {% if trustee.photo %}
+                                    <img src="{{ trustee.photo.url }}" alt="{{ trustee.name }}" class="rounded-circle border" style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-4" style="width: 60px; height: 60px;">
+                                        {{ trustee.name|slice:":1" }}
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0">{{ trustee.name }}</h6>
+                                        <span class="badge bg-success-subtle text-success small">{{ trustee.designation }}</span>
+                                    </div>
+                                </div>
+                                <p class="text-muted small mb-3 flex-grow-1">{{ trustee.bio|truncatewords:15|default:"Active trustee dedicated to social empowerment." }}</p>
+                                <div class="d-flex gap-2 mb-3">
+                                    {% if trustee.linkedin_url %}<a href="{{ trustee.linkedin_url }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="fa-brands fa-linkedin"></i></a>{% endif %}
+                                    {% if trustee.twitter_url %}<a href="{{ trustee.twitter_url }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="fa-brands fa-x-twitter"></i></a>{% endif %}
+                                    {% if trustee.facebook_url %}<a href="{{ trustee.facebook_url }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="fa-brands fa-facebook"></i></a>{% endif %}
+                                </div>
+                                <div class="border-top pt-2 text-end">
+                                    <a href="{% url 'trustee_edit' trustee.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                        <i class="fa-solid fa-pen-to-square me-1"></i> Edit Profile
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-4 text-muted">No trustees added yet.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- 6. PENDING PLEDGES & WHATSAPP FOLLOW-UP -->
+                <div class="tab-pane fade" id="pledges" role="tabpanel">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">Outstanding Pledges & WhatsApp Follow-Ups</h5>
+                            <p class="text-muted small mb-0">Follow up with donors who pledged contributions. Send 1-click WhatsApp reminders with RazorPay link.</p>
+                        </div>
+                        <a href="{% url 'whatsapp_logs' %}" class="btn btn-outline-success rounded-pill px-3 small fw-bold">
+                            <i class="fa-brands fa-whatsapp me-1"></i> View WhatsApp Outbound Logs
+                        </a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light small">
+                                <tr>
+                                    <th>Donor Name</th>
+                                    <th>Phone / WhatsApp</th>
+                                    <th>Target Initiative</th>
+                                    <th>Pledge Amount</th>
+                                    <th>Target Due Date</th>
+                                    <th>RazorPay Link</th>
+                                    <th class="text-end">WhatsApp Outreach</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in pending_donations %}
+                                <tr>
+                                    <td><strong>{{ p.donor_name }}</strong></td>
+                                    <td>
+                                        <a href="https://wa.me/{{ p.donor_phone }}" target="_blank" class="text-decoration-none text-success fw-bold small">
+                                            <i class="fa-brands fa-whatsapp me-1"></i> {{ p.donor_phone }}
+                                        </a>
+                                    </td>
+                                    <td>{{ p.initiative.title|default:"General Welfare Fund" }}</td>
+                                    <td><span class="fw-bold text-warning">₹{{ p.amount|floatformat:0|intcomma }}</span></td>
+                                    <td class="small">{{ p.pledge_due_date|default:"Immediate" }}</td>
+                                    <td>
+                                        {% if p.razorpay_payment_link %}
+                                        <a href="{{ p.razorpay_payment_link }}" target="_blank" class="small text-primary text-decoration-none">
+                                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> View Link
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted small">Auto-generated</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{% url 'send_whatsapp_reminder' p.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
+                                            <i class="fa-brands fa-whatsapp me-1"></i> Send Reminder
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">No pending pledges at this time. All pledges are fulfilled!</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

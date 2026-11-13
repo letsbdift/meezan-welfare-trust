@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{{ TRUST_NAME }}{% endblock %} | Charitable Trust Harapanahalli</title>
+    <title>{% block title %}{{ TRUST_NAME }}{% endblock %} | Charitable Trust</title>
     
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,6 +19,9 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Razorpay Checkout Script (Available globally) -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
     <!-- Custom Stylesheet -->
     <link rel="stylesheet" href="/static/css/trust.css">
 
@@ -32,11 +35,11 @@
             <div>
                 <span class="me-3"><i class="fa-solid fa-building-columns text-warning me-1"></i> SBI A/C: <strong>{{ TRUST_BANK_ACCOUNT_NO }}</strong> (IFSC: {{ TRUST_BANK_IFSC }})</span>
                 <span class="me-3"><i class="fa-solid fa-qrcode text-info me-1"></i> UPI: <strong>{{ TRUST_UPI_ID }}</strong></span>
-                <span><i class="fa-solid fa-location-dot text-danger me-1"></i> Harapanahalli, Karnataka</span>
+                <span><i class="fa-solid fa-hands-holding-heart text-warning me-1"></i> Serving All Needy Communities</span>
             </div>
             <div>
                 <span class="me-3"><i class="fa-solid fa-phone text-success me-1"></i> Helpline: {{ TRUST_PHONE }}</span>
-                <a href="https://wa.me/{{ TRUST_WHATSAPP_NUMBER }}?text=Hello%20Meezan%20Trust%20Harapanahalli,%20I%20would%20like%20to%20learn%20more" target="_blank" class="text-white text-decoration-none">
+                <a href="https://wa.me/{{ TRUST_WHATSAPP_NUMBER }}?text=Hello%20Meezan%20Welfare%20and%20Charitable%20Trust,%20I%20would%20like%20to%20learn%20more" target="_blank" class="text-white text-decoration-none">
                     <i class="fa-brands fa-whatsapp text-success me-1"></i> WhatsApp Support
                 </a>
             </div>
@@ -46,11 +49,12 @@
     <!-- Responsive Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{% url 'home' %}">
+            <a class="navbar-brand d-flex align-items-center text-wrap" href="{% url 'home' %}" style="max-width: 320px;">
                 <i class="fa-solid fa-scale-balanced text-success fs-2 me-2"></i>
-                <div>
-                    <span class="brand-logo-text" style="color: #064e3b !important;">Meezan Trust</span>
-                    <span class="brand-badge d-none d-sm-inline-block" style="background-color: #d1fae5; color: #065f46;">Harapanahalli</span>
+                <div class="lh-sm">
+                    <!-- Updated Full Branding Name -->
+                    <span class="brand-logo-text d-block" style="color: #064e3b !important; font-size: 1.15rem; font-weight: 800; line-height: 1.2;">Meezan Welfare and Charitable Trust</span>
+                    <span class="text-muted text-xs d-none d-sm-inline-block" style="font-size: 0.72rem;">Serving All Needy Individuals & Communities</span>
                 </div>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
@@ -89,6 +93,33 @@
                             <span class="badge bg-danger rounded-pill ms-1" style="font-size: 0.65rem;">LIVE</span>
                         </a>
                     </li>
+
+                    <!-- Role-Based Admin Access Links -->
+                    {% if user.is_authenticated and user.is_staff %}
+                    <li class="nav-item dropdown ms-lg-1">
+                        <a class="nav-link dropdown-toggle btn btn-sm btn-outline-success rounded-pill px-3 py-1 my-1 my-lg-0 text-success fw-bold d-inline-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fa-solid fa-shield-halved me-1"></i> Admin Portal
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
+                            <li class="px-3 py-1 small text-muted border-bottom">Signed in as <strong>{{ user.username }}</strong></li>
+                            <li><a class="dropdown-item py-2" href="{% url 'admin_portal' %}"><i class="fa-solid fa-sliders text-primary me-2"></i> Frontend Management Portal</a></li>
+                            <li><a class="dropdown-item py-2" href="{% url 'initiative_create' %}"><i class="fa-solid fa-plus text-success me-2"></i> Add Activity / Initiative</a></li>
+                            <li><a class="dropdown-item py-2" href="{% url 'event_create' %}"><i class="fa-solid fa-calendar-plus text-info me-2"></i> Add Event</a></li>
+                            <li><a class="dropdown-item py-2" href="{% url 'expense_create' %}"><i class="fa-solid fa-receipt text-warning me-2"></i> Log Maintenance Cost</a></li>
+                            <li><a class="dropdown-item py-2" href="{% url 'trustee_create' %}"><i class="fa-solid fa-user-plus text-secondary me-2"></i> Add Trustee Profile</a></li>
+                            <li><a class="dropdown-item py-2" href="/admin/" target="_blank"><i class="fa-solid fa-lock text-danger me-2"></i> Django Admin</a></li>
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li><a class="dropdown-item text-danger py-2" href="{% url 'admin_logout' %}"><i class="fa-solid fa-arrow-right-from-bracket me-2"></i> Log Out</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item ms-lg-1">
+                        <a class="nav-link text-secondary small py-1" href="{% url 'admin_login' %}" title="Trustee / Admin Login">
+                            <i class="fa-solid fa-lock me-1"></i> Admin Login
+                        </a>
+                    </li>
+                    {% endif %}
+
                     <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
                         <a class="btn btn-warning fw-bold px-3 py-2 shadow-sm rounded-pill d-inline-flex align-items-center" href="{% url 'donate' %}">
                             <i class="fa-solid fa-heart text-danger me-2"></i> Donate / Scan QR
@@ -117,7 +148,7 @@
     </main>
 
     <!-- Floating WhatsApp Action Button -->
-    <a href="https://wa.me/{{ TRUST_WHATSAPP_NUMBER }}?text=Namaste%20Meezan%20Trust%20Harapanahalli,%20I%20would%20like%20to%20support%20your%20charitable%20initiatives" target="_blank" class="floating-whatsapp" title="Chat with Meezan Trust on WhatsApp" aria-label="WhatsApp Support">
+    <a href="https://wa.me/{{ TRUST_WHATSAPP_NUMBER }}?text=Namaste%20Meezan%20Welfare%20and%20Charitable%20Trust,%20I%20would%20like%20to%20support%20your%20charitable%20initiatives" target="_blank" class="floating-whatsapp" title="Chat with Meezan Trust on WhatsApp" aria-label="WhatsApp Support">
         <i class="fa-brands fa-whatsapp"></i>
     </a>
 
@@ -128,9 +159,9 @@
                 <div class="col-lg-4 col-md-6">
                     <div class="d-flex align-items-center mb-3">
                         <i class="fa-solid fa-scale-balanced text-warning fs-3 me-2"></i>
-                        <h5 class="mb-0 fw-bold">{{ TRUST_NAME }}</h5>
+                        <h5 class="mb-0 fw-bold">Meezan Welfare and Charitable Trust</h5>
                     </div>
-                    <p class="text-light opacity-75 small">{{ TRUST_TAGLINE }}</p>
+                    <p class="text-light opacity-75 small">Serving all needy individuals and communities with compassion, unity, and social responsibility.</p>
                     <p class="text-light opacity-75 small mb-2"><i class="fa-solid fa-location-dot me-2 text-warning"></i> {{ TRUST_ADDRESS }}</p>
                     <p class="text-light opacity-75 small mb-2"><i class="fa-solid fa-phone me-2 text-warning"></i> {{ TRUST_PHONE }}</p>
                     <p class="text-light opacity-75 small"><i class="fa-solid fa-envelope me-2 text-warning"></i> {{ TRUST_EMAIL }}</p>
@@ -145,7 +176,7 @@
                         <li class="mb-2">&bull; Blood Donation & Free Health Camps</li>
                         <li class="mb-2">&bull; Summer Water Distribution (15 Circles)</li>
                         <li class="mb-2">&bull; Meezan Poly Clinic & Pharma</li>
-                        <li class="mb-2">&bull; Baitul Maal for Harapanahalli City</li>
+                        <li class="mb-2">&bull; Baitul Maal for Needy Families</li>
                     </ul>
                 </div>
 
@@ -158,6 +189,11 @@
                         <li class="mb-2"><a href="{% url 'trustees_list' %}" class="text-decoration-none text-light hover-white">Board of Trustees</a></li>
                         <li class="mb-2"><a href="{% url 'maintenance_costs' %}" class="text-decoration-none text-light hover-white">Maintenance Audit</a></li>
                         <li class="mb-2"><a href="{% url 'dashboard' %}" class="text-decoration-none text-light hover-white">Trust Dashboard</a></li>
+                        {% if user.is_authenticated and user.is_staff %}
+                        <li class="mb-2"><a href="{% url 'admin_portal' %}" class="text-decoration-none text-warning fw-bold"><i class="fa-solid fa-shield-halved me-1"></i> Admin Portal</a></li>
+                        {% else %}
+                        <li class="mb-2"><a href="{% url 'admin_login' %}" class="text-decoration-none text-light hover-white"><i class="fa-solid fa-lock me-1"></i> Admin Login</a></li>
+                        {% endif %}
                     </ul>
                 </div>
 
@@ -176,7 +212,7 @@
             </div>
             <hr class="border-light opacity-25 my-4">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-center text-light opacity-75 small">
-                <p class="mb-0">&copy; 2026 {{ TRUST_NAME }}. Harapanahalli, Karnataka. All rights reserved.</p>
+                <p class="mb-0">&copy; 2026 Meezan Welfare and Charitable Trust. All rights reserved.</p>
                 <div>
                     <span class="me-3"><i class="fa-solid fa-building-columns text-warning me-1"></i> SBI Verified</span>
                     <span><i class="fa-brands fa-whatsapp text-success me-1"></i> WhatsApp: {{ TRUST_PHONE }}</span>

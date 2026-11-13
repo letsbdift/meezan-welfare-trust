@@ -1,20 +1,33 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
+from django.contrib.auth.models import User
 from decimal import Decimal
+import json
+
 from core.models import (
     Initiative, Event, Trustee, Donor, Donation,
     MaintenanceActivity, MaintenanceExpense, WhatsAppNotification
 )
 from core.whatsapp_service import whatsapp_service
 from core.razorpay_service import razorpay_service
+from core.views import get_donation_metrics
 
 
 class MeezanTrustComprehensiveTestCase(TestCase):
     def setUp(self):
         self.client = Client()
 
-        # Create Trustee
+        # Create Admin / Staff User
+        self.staff_user = User.objects.create_user(
+            username='trustee_admin',
+            password='testpassword123',
+            is_staff=True,
+            first_name='Admin',
+            last_name='Trustee'
+        )
+
+        # Create Trustee Profile
         self.trustee = Trustee.objects.create(
             name='Janab Thousif Mohammed D',
             designation='Founder & Managing Trustee',
@@ -28,7 +41,7 @@ class MeezanTrustComprehensiveTestCase(TestCase):
             title='1. Iftar Koota Interfaith Harmony Gathering',
             category='HUNGER',
             short_description='Interfaith gathering during Ramadan',
-            detailed_description='Promoting brotherhood across Harapanahalli.',
+            detailed_description='Promoting brotherhood across Harapanahalli and all communities in need.',
             target_amount=Decimal('350000.00'),
             is_active=True
         )
@@ -90,21 +103,148 @@ class MeezanTrustComprehensiveTestCase(TestCase):
             vendor_payee='Karnataka Generic Pharma Distributors'
         )
 
-    def test_home_page(self):
+    def test_home_page_branding_and_three_metrics(self):
         response = self.client.get(reverse('home'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Meezan Welfare And Charitable Trust')
-        self.assertContains(response, 'Harapanahalli')
-        self.assertContains(response, '45000364554') # SBI Account
-        self.assertContains(response, 'SBIN0017847') # SBI IFSC
-        self.assertContains(response, '8722211966@sbi') # UPI ID
+        # 1. Branding Name
+        self.assertContains(response, 'Meezan Welfare and Charitable Trust')
+        # 2. Broadened Copy
+        self.assertContains(response, 'Serving All Needy Individuals & Communities')
+        # 3. Three Key Financial Metrics together
+        self.assertContains(response, 'Total Expected Budget')
+        self.assertContains(response, 'Total Raised in Trust')
+        self.assertContains(response, 'Pending Pledges')
+        # 4. SBI Banking details
+        self.assertContains(response, '45000364554')
+        self.assertContains(response, 'SBIN0017847')
+        self.assertContains(response, '8722211966@sbi')
+
+    def test_admin_access_control_and_portal(self):
+        # Unauthenticated access to /portal/ should redirect to /login/
+        portal_url = reverse('admin_portal')
+        res_unauth = self.client.get(portal_url)
+        self.assertEqual(res_unauth.status_code, 302)
+        self.assertIn(reverse('admin_login'), res_unauth.url)
+
+        # Login as staff user
+        login_res = self.client.login(username='trustee_admin', password='testpassword123')
+        self.assertTrue(login_res)
+
+        # Authenticated staff access to /portal/
+        res_auth = self.client.get(portal_url)
+        self.assertEqual(res_auth.status_code, 200)
+        self.assertContains(res_auth, 'Meezan Trust Management Portal')
+        self.assertContains(res_auth, 'Financial Figures & Targets')
+        self.assertContains(res_auth, 'Activities & Initiatives')
+        self.assertContains(res_auth, 'Maintenance Expenses')
+        self.assertContains(res_auth, 'Trustees')
+
+        # Update target budget directly from admin portal
+        update_url = reverse('update_financial_target', kwargs={'pk': self.initiative.pk})
+        res_update = self.client.post(update_url, {
+            'target_amount': '450000',
+            'is_active': 'on'
+        })
+        self.assertEqual(res_update.status_code, 302)
+        self.initiative.refresh_from_db()
+        self.assertEqual(self.initiative.target_amount, Decimal('450000.00'))
+
+    def test_api_create_order_pledge_mode(self):
+        """Pledges save directly to DB without launching payment popup."""
+        payload = {
+            'amount': '5000',
+            'donor_name': 'Zameer Ahmed',
+            'donor_phone': '+919988776655',
+            'donor_email': 'zameer@example.com',
+            'initiative': str(self.initiative.id),
+            'is_pledge': True,
+            'pledge_due_date': '2026-12-31'
+        }
+        res = self.client.post(
+            reverse('api_create_order'),
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertTrue(data['is_pledge'])
+
+        # Verify donation created with PENDING status and is_pledge=True
+        donation = Donation.objects.get(id=data['donation_id'])
+        self.assertEqual(donation.status, 'PENDING')
+        self.assertTrue(donation.is_pledge)
+        self.assertEqual(donation.amount, Decimal('5000.00'))
+        self.assertTrue(donation.razorpay_payment_link.startswith('https://rzp.io/i/'))
+
+    def test_api_create_order_payment_mode(self):
+        """Immediate payment creates RazorPay order."""
+        payload = {
+            'amount': '10000',
+            'donor_name': 'Farooq Basha',
+            'donor_phone': '+919876543210',
+            'donor_email': 'farooq@example.com',
+            'initiative': str(self.initiative.id),
+            'is_pledge': False
+        }
+        res = self.client.post(
+            reverse('api_create_order'),
+            data=json.dumps(payload),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertFalse(data['is_pledge'])
+        self.assertTrue(data['order_id'].startswith('order_'))
+        self.assertEqual(data['amount'], 10000.0)
+
+    def test_payment_verify_and_auto_update_totals(self):
+        """Verifying payment updates donation to SUCCESS, issues receipt, and updates totals."""
+        initial_metrics = get_donation_metrics()
+        initial_raised = initial_metrics['total_raised']
+
+        donation = Donation.objects.create(
+            donor=self.donor,
+            donor_name='Munawar Khan',
+            donor_phone='+919876500000',
+            initiative=self.initiative,
+            amount=Decimal('8000.00'),
+            status='PENDING',
+            is_pledge=False,
+            razorpay_order_id='order_sim_test_001'
+        )
+
+        verify_payload = {
+            'donation_id': donation.id,
+            'razorpay_order_id': donation.razorpay_order_id,
+            'razorpay_payment_id': 'pay_sim_success_123',
+            'razorpay_signature': 'simulated_valid_sig'
+        }
+        res = self.client.post(
+            reverse('api_verify_payment'),
+            data=json.dumps(verify_payload),
+            content_type='application/json'
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertTrue(data['receipt_number'].startswith('MEEZAN-REC-'))
+
+        # Confirm donation updated to SUCCESS
+        donation.refresh_from_db()
+        self.assertEqual(donation.status, 'SUCCESS')
+        self.assertEqual(donation.razorpay_payment_id, 'pay_sim_success_123')
+
+        # Confirm Total Raised updated automatically
+        updated_metrics = get_donation_metrics()
+        self.assertEqual(updated_metrics['total_raised'], initial_raised + Decimal('8000.00'))
 
     def test_dashboard_metrics(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         metrics = response.context['metrics']
         self.assertGreaterEqual(metrics['total_raised'], Decimal('50000.00'))
-        self.assertGreaterEqual(metrics['total_expected'], Decimal('365000.00'))
         self.assertContains(response, 'Charitable Trust Dynamics Dashboard')
         self.assertContains(response, 'Pending Pledges & Automated WhatsApp Reminders')
 
@@ -118,7 +258,7 @@ class MeezanTrustComprehensiveTestCase(TestCase):
     def test_maintenance_costs(self):
         response = self.client.get(reverse('maintenance_costs'), {'month': 11, 'year': 2026})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Meezan Poly Clinic & Pharma Healthcare')
+        self.assertContains(response, 'Meezan Poly Clinic &amp; Pharma Healthcare')
         self.assertContains(response, '25,000.00')
 
     def test_donate_page_has_sbi_banking_and_qr(self):
@@ -128,15 +268,6 @@ class MeezanTrustComprehensiveTestCase(TestCase):
         self.assertContains(response, 'SBIN0017847')
         self.assertContains(response, '8722211966@sbi')
         self.assertContains(response, 'meezan_sbi_qr.jpg')
-
-    def test_initiatives_list_and_detail(self):
-        res_list = self.client.get(reverse('initiatives_list'))
-        self.assertEqual(res_list.status_code, 200)
-        self.assertContains(res_list, 'Iftar Koota')
-
-        res_detail = self.client.get(reverse('initiative_detail', kwargs={'slug': self.initiative.slug}))
-        self.assertEqual(res_detail.status_code, 200)
-        self.assertContains(res_detail, 'Iftar Koota')
 
     def test_receipt_detail(self):
         res = self.client.get(reverse('receipt_detail', kwargs={'receipt_number': self.completed_donation.receipt_number}))

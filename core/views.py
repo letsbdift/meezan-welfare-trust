@@ -3,7 +3,10 @@ from decimal import Decimal
 from datetime import datetime
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponse
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, HttpResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
@@ -21,12 +24,26 @@ from .razorpay_service import razorpay_service
 from .whatsapp_service import whatsapp_service
 
 
+def staff_required(view_func):
+    """Decorator ensuring user is authenticated and has staff or superuser privileges."""
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.warning(request, "Please log in with trustee/admin credentials to access this management feature.")
+            return redirect(f"{reverse('admin_login')}?next={request.path}")
+        if not (request.user.is_staff or request.user.is_superuser):
+            messages.error(request, "Access restricted. You need trustee or staff permissions.")
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
 def get_donation_metrics():
     """
     Computes real-time donation metrics:
     - Expected Amount: Sum of active initiative target amounts + outstanding pledged donations
     - Raised Amount: Total successful donations
     - Pending Amount: Remaining target needed + outstanding pledges
+    - Pending Pledges: Sum of committed pending pledges
     """
     total_raised_agg = Donation.objects.filter(status='SUCCESS').aggregate(total=Sum('amount'))['total']
     total_raised = total_raised_agg or Decimal('0.00')
@@ -66,9 +83,9 @@ def get_donation_metrics():
 
 
 def home(request):
-    """Public home page with mission, metrics ticker, featured campaigns, events, and trustees."""
+    """Public home page with broadened humanitarian mission, metrics, activities, and banking."""
     metrics = get_donation_metrics()
-    featured_initiatives = Initiative.objects.filter(is_active=True).order_by('-is_featured', '-created_at')[:3]
+    featured_initiatives = Initiative.objects.filter(is_active=True).order_by('-is_featured', 'id')[:6]
     upcoming_events = Event.objects.filter(event_date__gte=timezone.now()).order_by('event_date')[:3]
     trustees = Trustee.objects.filter(is_active=True).order_by('order', 'name')[:4]
     
@@ -100,18 +117,15 @@ def dashboard(request):
     - Visual Chart.js analytics
     - Maintenance expense breakdowns
     - Pending donations with WhatsApp Reminder trigger
-    - WhatsApp broadcast controls
     """
     metrics = get_donation_metrics()
-
-    # Initiatives breakdown
     initiatives = Initiative.objects.all().order_by('-is_active', '-target_amount')
     
     # Chart 1: Expected vs Raised vs Pending
-    chart_metric_labels = ['Raised Amount (₹)', 'Pending Amount (₹)', 'Expected Target (₹)']
+    chart_metric_labels = ['Raised Amount (₹)', 'Pending Pledges (₹)', 'Expected Budget (₹)']
     chart_metric_data = [
         float(metrics['total_raised']),
-        float(metrics['total_pending']),
+        float(metrics['pending_pledges']),
         float(metrics['total_expected'])
     ]
 
@@ -145,7 +159,6 @@ def dashboard(request):
             expense_category_amounts.append(float(cat_sum))
             expense_category_colors.append(cat.color_hex)
 
-    # If current month has no expenses yet, load from any latest month with data
     if not expense_categories:
         latest_expense = MaintenanceExpense.objects.order_by('-year', '-month').first()
         if latest_expense:
@@ -162,16 +175,10 @@ def dashboard(request):
                     expense_category_amounts.append(float(cat_sum))
                     expense_category_colors.append(cat.color_hex)
 
-    # Pending donations / pledges for automated follow-up
     pending_donations = Donation.objects.filter(status='PENDING').order_by('-created_at')[:10]
-
-    # Recent successful donations
     recent_donations = Donation.objects.filter(status='SUCCESS').order_by('-created_at')[:10]
-
-    # Upcoming events for quick broadcast
     upcoming_events = Event.objects.filter(status='UPCOMING').order_by('event_date')
 
-    # WhatsApp Notifications stats
     wa_stats = {
         'total_sent': WhatsAppNotification.objects.filter(status='SENT').count(),
         'reminders_sent': WhatsAppNotification.objects.filter(notification_type='PAYMENT_REMINDER').count(),
@@ -197,6 +204,93 @@ def dashboard(request):
     }
     return render(request, 'core/dashboard.html', context)
 
+
+# ---------------- Authentication & Admin Access ---------------- #
+
+def admin_login_view(request):
+    """Admin login page for trustees and staff."""
+    if request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser):
+        return redirect('admin_portal')
+
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            messages.success(request, f"Welcome back, {user.first_name or user.username}! You are logged into the Trustee Admin Portal.")
+            next_url = request.GET.get('next') or request.POST.get('next') or 'admin_portal'
+            return redirect(next_url)
+        else:
+            messages.error(request, "Invalid username or password. Please try again.")
+    else:
+        form = AuthenticationForm()
+
+    return render(request, 'core/login.html', {
+        'form': form,
+        'next': request.GET.get('next', ''),
+    })
+
+
+def admin_logout_view(request):
+    """Logs out admin user and redirects to home."""
+    logout(request)
+    messages.info(request, "You have been logged out securely.")
+    return redirect('home')
+
+
+# ---------------- Frontend Admin Management Portal ---------------- #
+
+@staff_required
+def admin_portal_view(request):
+    """
+    Comprehensive UI-based admin management portal:
+    Allows logged-in admins to add, edit, and update:
+    - Financial figures & target budgets
+    - Activities / Initiatives
+    - Events
+    - Monthly Maintenance Expenses
+    - Trustee Profiles
+    """
+    metrics = get_donation_metrics()
+    initiatives = Initiative.objects.all().order_by('id')
+    events = Event.objects.all().order_by('-event_date')
+    expenses = MaintenanceExpense.objects.select_related('activity').order_by('-date_incurred', '-created_at')[:30]
+    trustees = Trustee.objects.all().order_by('order', 'name')
+    pending_donations = Donation.objects.filter(status='PENDING').order_by('-created_at')
+    recent_donations = Donation.objects.filter(status='SUCCESS').order_by('-created_at')[:20]
+
+    context = {
+        'metrics': metrics,
+        'initiatives': initiatives,
+        'events': events,
+        'expenses': expenses,
+        'trustees': trustees,
+        'pending_donations': pending_donations,
+        'recent_donations': recent_donations,
+        'activities': MaintenanceActivity.objects.all(),
+    }
+    return render(request, 'core/admin_portal.html', context)
+
+
+@staff_required
+def update_financial_target(request, pk):
+    """Quick inline/modal update for an initiative's target budget."""
+    initiative = get_object_or_404(Initiative, pk=pk)
+    if request.method == 'POST':
+        new_target = request.POST.get('target_amount')
+        is_active = request.POST.get('is_active') == 'on'
+        if new_target:
+            try:
+                initiative.target_amount = Decimal(new_target)
+                initiative.is_active = is_active
+                initiative.save()
+                messages.success(request, f"Financial target for '{initiative.title}' updated to ₹{initiative.target_amount:,.2f}!")
+            except Exception as e:
+                messages.error(request, f"Failed to update target: {e}")
+    return redirect('admin_portal')
+
+
+# ---------------- Public Content Pages ---------------- #
 
 def initiatives_list(request):
     """Browse all charitable initiatives and causes with filter by category."""
@@ -271,7 +365,6 @@ def maintenance_costs(request):
     
     total_month_spent = expenses.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
-    # Activity breakdown data
     breakdown = []
     chart_labels = []
     chart_amounts = []
@@ -315,8 +408,10 @@ def maintenance_costs(request):
     return render(request, 'core/maintenance_costs.html', context)
 
 
+# ---------------- RazorPay Integration & Donation Endpoints ---------------- #
+
 def donate(request):
-    """General donation page with RazorPay payment initiation."""
+    """General donation page with RazorPay payment initiation and direct SBI details."""
     initiative_id = request.GET.get('initiative')
     initial = {}
     selected_initiative = None
@@ -327,18 +422,16 @@ def donate(request):
         except Initiative.DoesNotExist:
             pass
 
+    # Traditional form POST fallback
     if request.method == 'POST':
         form = DonationForm(request.POST)
         if form.is_valid():
             donation = form.save(commit=False)
-            
-            # Handle custom amount if selected
             custom_amt = form.cleaned_data.get('custom_amount')
             if custom_amt and custom_amt > 0:
                 donation.amount = custom_amt
 
-            # Link or create donor record
-            donor, created = Donor.objects.get_or_create(
+            donor, _ = Donor.objects.get_or_create(
                 phone=donation.donor_phone,
                 defaults={
                     'name': donation.donor_name,
@@ -348,16 +441,13 @@ def donate(request):
             )
             donation.donor = donor
 
-            # If it's a pledge (not paying right now)
             if donation.is_pledge:
                 donation.status = 'PENDING'
                 donation.payment_method = 'RAZORPAY_LINK'
-                
-                # Generate RazorPay payment link for the pledge
                 base_url = request.build_absolute_uri('/')[:-1]
                 link_res = razorpay_service.create_payment_link(
                     amount=donation.amount,
-                    description=f"Pledge for {donation.initiative.title if donation.initiative else 'Trust Fund'}",
+                    description=f"Pledge for {donation.initiative.title if donation.initiative else 'Meezan Trust'}",
                     customer_name=donation.donor_name,
                     customer_email=donation.donor_email,
                     customer_phone=donation.donor_phone
@@ -366,16 +456,15 @@ def donate(request):
                 donation.razorpay_link_id = link_res.get('link_id', '')
                 donation.save()
 
-                # Automatically send WhatsApp reminder with payment link!
                 try:
                     whatsapp_service.send_payment_reminder(donation, base_url=base_url)
-                except Exception as e:
+                except Exception:
                     pass
 
-                messages.success(request, f"Thank you {donation.donor_name}! Your pledge of ₹{donation.amount} has been registered. A payment reminder with the RazorPay payment link has been dispatched to your WhatsApp (+{donation.donor_phone}).")
+                messages.success(request, f"Thank you {donation.donor_name}! Your pledge of ₹{donation.amount:,.2f} has been registered. A payment reminder with the RazorPay payment link has been dispatched to your WhatsApp (+{donation.donor_phone}).")
                 return redirect('dashboard')
 
-            # Otherwise, create Razorpay Order for instant checkout
+            # Instant Order
             receipt_code = f"order_{timezone.now().strftime('%Y%m%d%H%M%S')}"
             order_res = razorpay_service.create_order(
                 amount=donation.amount,
@@ -383,7 +472,7 @@ def donate(request):
                 notes={
                     'donor_name': donation.donor_name,
                     'donor_phone': donation.donor_phone,
-                    'initiative': donation.initiative.title if donation.initiative else "General Fund"
+                    'initiative': donation.initiative.title if donation.initiative else "General Welfare"
                 }
             )
 
@@ -391,7 +480,6 @@ def donate(request):
             donation.status = 'PENDING'
             donation.save()
 
-            # Render checkout page with Razorpay popup
             return render(request, 'core/razorpay_checkout.html', {
                 'donation': donation,
                 'order': order_res,
@@ -409,16 +497,153 @@ def donate(request):
 
 
 @csrf_exempt
+def api_create_order(request):
+    """
+    Backend order creation endpoint:
+    - Generates Razorpay order_id and returns credentials for Razorpay popup.
+    - If is_pledge is checked, saves pledge directly to database and sends WhatsApp reminder.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    try:
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+
+        amount = Decimal(str(data.get('amount', 0)))
+        if amount <= 0:
+            return JsonResponse({'success': False, 'error': 'Please enter a valid donation amount.'}, status=400)
+
+        donor_name = data.get('donor_name', '').strip()
+        donor_phone = data.get('donor_phone', '').strip()
+        donor_email = data.get('donor_email', '').strip()
+        pan_number = data.get('pan_number', '').strip()
+        initiative_id = data.get('initiative')
+        is_pledge = str(data.get('is_pledge', '')).lower() in ('true', '1', 'on', 'yes')
+        pledge_due_date = data.get('pledge_due_date') or None
+
+        if not donor_name or not donor_phone:
+            return JsonResponse({'success': False, 'error': 'Full name and WhatsApp number are required.'}, status=400)
+
+        initiative = None
+        if initiative_id:
+            try:
+                initiative = Initiative.objects.get(id=initiative_id)
+            except Initiative.DoesNotExist:
+                pass
+
+        donor, _ = Donor.objects.get_or_create(
+            phone=donor_phone,
+            defaults={
+                'name': donor_name,
+                'email': donor_email,
+                'pan_number': pan_number,
+            }
+        )
+
+        donation = Donation.objects.create(
+            donor=donor,
+            donor_name=donor_name,
+            donor_phone=donor_phone,
+            donor_email=donor_email,
+            pan_number=pan_number,
+            initiative=initiative,
+            amount=amount,
+            status='PENDING',
+            is_pledge=is_pledge,
+            pledge_due_date=pledge_due_date,
+            donation_type='MONTHLY_PLEDGE' if is_pledge else 'ONE_TIME',
+            payment_method='RAZORPAY_LINK' if is_pledge else 'RAZORPAY_CHECKOUT'
+        )
+
+        base_url = request.build_absolute_uri('/')[:-1]
+
+        # Case 1: Pledge-only submission (save directly to database, do not trigger payment popup)
+        if is_pledge:
+            link_res = razorpay_service.create_payment_link(
+                amount=donation.amount,
+                description=f"Pledge for {donation.initiative.title if donation.initiative else 'Meezan Community Welfare'}",
+                customer_name=donation.donor_name,
+                customer_email=donation.donor_email,
+                customer_phone=donation.donor_phone
+            )
+            donation.razorpay_payment_link = link_res.get('short_url', '')
+            donation.razorpay_link_id = link_res.get('link_id', '')
+            donation.save()
+
+            try:
+                whatsapp_service.send_payment_reminder(donation, base_url=base_url)
+            except Exception:
+                pass
+
+            return JsonResponse({
+                'success': True,
+                'is_pledge': True,
+                'donation_id': donation.id,
+                'message': f"Pledge of ₹{donation.amount:,.2f} recorded successfully! A WhatsApp reminder with RazorPay link has been dispatched.",
+                'redirect_url': reverse('dashboard')
+            })
+
+        # Case 2: Immediate Payment -> Generate RazorPay order for popup checkout
+        receipt_code = f"order_{donation.id}_{timezone.now().strftime('%Y%m%d%H%M%S')}"
+        order_res = razorpay_service.create_order(
+            amount=donation.amount,
+            receipt=receipt_code,
+            notes={
+                'donor_name': donation.donor_name,
+                'donor_phone': donation.donor_phone,
+                'initiative': donation.initiative.title if donation.initiative else "General Welfare"
+            }
+        )
+
+        donation.razorpay_order_id = order_res.get('order_id')
+        donation.save()
+
+        return JsonResponse({
+            'success': True,
+            'is_pledge': False,
+            'order_id': order_res.get('order_id'),
+            'amount': float(donation.amount),
+            'amount_paise': order_res.get('amount_paise'),
+            'currency': order_res.get('currency', 'INR'),
+            'key_id': razorpay_service.key_id,
+            'donation_id': donation.id,
+            'donor_name': donation.donor_name,
+            'donor_email': donation.donor_email,
+            'donor_phone': donation.donor_phone,
+            'initiative_title': donation.initiative.title if donation.initiative else "Meezan Community Welfare",
+            'is_simulated': order_res.get('is_simulated', False)
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@csrf_exempt
 def payment_verify(request):
     """
     Handles RazorPay payment verification webhook/callback.
-    Marks donation as SUCCESS, issues 80G receipt number, and triggers WhatsApp confirmation.
+    Marks donation as SUCCESS, issues official receipt number, updates metrics,
+    and triggers instant WhatsApp confirmation.
     """
     if request.method == 'POST':
         donation_id = request.POST.get('donation_id')
         razorpay_order_id = request.POST.get('razorpay_order_id')
         razorpay_payment_id = request.POST.get('razorpay_payment_id')
         razorpay_signature = request.POST.get('razorpay_signature', '')
+
+        # Also support JSON body if posted via fetch
+        if not donation_id and request.content_type == 'application/json':
+            try:
+                body_data = json.loads(request.body)
+                donation_id = body_data.get('donation_id')
+                razorpay_order_id = body_data.get('razorpay_order_id')
+                razorpay_payment_id = body_data.get('razorpay_payment_id')
+                razorpay_signature = body_data.get('razorpay_signature', '')
+            except Exception:
+                pass
 
         try:
             donation = Donation.objects.get(id=donation_id)
@@ -444,18 +669,25 @@ def payment_verify(request):
             base_url = request.build_absolute_uri('/')[:-1]
             try:
                 whatsapp_service.send_donation_receipt_notification(donation, base_url=base_url)
-            except Exception as e:
+            except Exception:
                 pass
 
+            receipt_url = reverse('receipt_detail', kwargs={'receipt_number': donation.receipt_number})
+            
             if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
                 return JsonResponse({
                     'status': 'success',
-                    'receipt_url': reverse('receipt_detail', kwargs={'receipt_number': donation.receipt_number})
+                    'receipt_number': donation.receipt_number,
+                    'receipt_url': receipt_url,
+                    'message': 'Payment confirmed successfully!'
                 })
+            messages.success(request, f"Heartfelt gratitude! Your contribution of ₹{donation.amount:,.2f} is verified. Receipt #{donation.receipt_number} issued.")
             return redirect('receipt_detail', receipt_number=donation.receipt_number)
         else:
             donation.status = 'FAILED'
             donation.save()
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                return JsonResponse({'status': 'error', 'message': 'Payment signature validation failed.'}, status=400)
             messages.error(request, "Payment verification could not be validated. Please contact trust support.")
             return redirect('home')
 
@@ -473,16 +705,16 @@ def receipt_detail(request, receipt_number):
 
 # ---------------- WhatsApp Automation Action Views ---------------- #
 
+@staff_required
 def send_whatsapp_reminder(request, donation_id):
     """Trustee/Admin action: Dispatch payment reminder for pending pledge via WhatsApp."""
     donation = get_object_or_404(Donation, id=donation_id)
     base_url = request.build_absolute_uri('/')[:-1]
     
-    # Generate payment link if not already existing
     if not donation.razorpay_payment_link:
         link_res = razorpay_service.create_payment_link(
             amount=donation.amount,
-            description=f"Pledge for {donation.initiative.title if donation.initiative else 'Trust Fund'}",
+            description=f"Pledge for {donation.initiative.title if donation.initiative else 'Meezan Community Welfare'}",
             customer_name=donation.donor_name,
             customer_email=donation.donor_email,
             customer_phone=donation.donor_phone
@@ -497,9 +729,10 @@ def send_whatsapp_reminder(request, donation_id):
         request, 
         f"✅ WhatsApp Payment Reminder dispatched to {donation.donor_name} (+{donation.donor_phone}). Status: {notification.get_status_display()}."
     )
-    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+    return redirect(request.META.get('HTTP_REFERER', 'admin_portal'))
 
 
+@staff_required
 def broadcast_event_whatsapp(request, event_id):
     """Trustee/Admin action: Broadcast event advertisement to all donors via WhatsApp."""
     event = get_object_or_404(Event, id=event_id)
@@ -519,7 +752,7 @@ def broadcast_event_whatsapp(request, event_id):
         request, 
         f"📢 Event advertisement for \"{event.title}\" successfully broadcasted to {dispatched_count} donors via WhatsApp!"
     )
-    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+    return redirect(request.META.get('HTTP_REFERER', 'admin_portal'))
 
 
 def whatsapp_logs(request):
@@ -530,8 +763,9 @@ def whatsapp_logs(request):
     })
 
 
-# ---------------- Content Management Views (Initiatives, Events, Expenses) ---------------- #
+# ---------------- Content Management Views (Restricted to Staff/Admin) ---------------- #
 
+@staff_required
 def manage_initiative(request, pk=None):
     """Create or edit an initiative with image upload."""
     initiative = get_object_or_404(Initiative, pk=pk) if pk else None
@@ -540,16 +774,17 @@ def manage_initiative(request, pk=None):
         if form.is_valid():
             saved = form.save()
             messages.success(request, f"Initiative '{saved.title}' saved successfully!")
-            return redirect('dashboard')
+            return redirect('admin_portal')
     else:
         form = InitiativeForm(instance=initiative)
     return render(request, 'core/manage_form.html', {
         'form': form,
         'title': 'Edit Initiative' if pk else 'Add New Initiative',
-        'subtitle': 'Manage charity campaign, upload banner, set target expected amount.',
+        'subtitle': 'Manage community welfare initiative, set target budget, and upload banner.',
     })
 
 
+@staff_required
 def manage_event(request, pk=None):
     """Create or edit an event with banner image upload."""
     event = get_object_or_404(Event, pk=pk) if pk else None
@@ -558,16 +793,17 @@ def manage_event(request, pk=None):
         if form.is_valid():
             saved = form.save()
             messages.success(request, f"Event '{saved.title}' saved successfully!")
-            return redirect('dashboard')
+            return redirect('admin_portal')
     else:
         form = EventForm(instance=event)
     return render(request, 'core/manage_form.html', {
         'form': form,
         'title': 'Edit Event' if pk else 'Add New Event',
-        'subtitle': 'Upload event details, venue, date, and coordinate WhatsApp announcements.',
+        'subtitle': 'Upload event details, venue, date, and coordinate WhatsApp invitations.',
     })
 
 
+@staff_required
 def manage_expense(request, pk=None):
     """Log or update itemized monthly maintenance expense with receipt voucher upload."""
     expense = get_object_or_404(MaintenanceExpense, pk=pk) if pk else None
@@ -576,7 +812,7 @@ def manage_expense(request, pk=None):
         if form.is_valid():
             saved = form.save()
             messages.success(request, f"Maintenance expense '{saved.title}' recorded!")
-            return redirect('maintenance_costs')
+            return redirect('admin_portal')
     else:
         form = MaintenanceExpenseForm(instance=expense)
     return render(request, 'core/manage_form.html', {
@@ -586,6 +822,7 @@ def manage_expense(request, pk=None):
     })
 
 
+@staff_required
 def manage_trustee(request, pk=None):
     """Add or edit trustee profile with photo and social media links."""
     trustee = get_object_or_404(Trustee, pk=pk) if pk else None
@@ -594,7 +831,7 @@ def manage_trustee(request, pk=None):
         if form.is_valid():
             saved = form.save()
             messages.success(request, f"Trustee profile '{saved.name}' updated successfully!")
-            return redirect('trustees_list')
+            return redirect('admin_portal')
     else:
         form = TrusteeForm(instance=trustee)
     return render(request, 'core/manage_form.html', {

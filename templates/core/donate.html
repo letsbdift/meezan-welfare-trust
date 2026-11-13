@@ -20,7 +20,7 @@
                 </div>
             </div>
 
-            <!-- Two Payment Options: 1. Official Bank & UPI QR | 2. Online RazorPay Gateway -->
+            <!-- Two Payment Options: 1. Official Bank & UPI QR | 2. Online RazorPay Gateway & Pledge -->
             <div class="row g-4 mb-4">
                 <!-- Option 1: Official SBI Scan & Pay QR and Direct Bank Account -->
                 <div class="col-lg-5">
@@ -94,7 +94,10 @@
                         <h5 class="fw-bold text-dark mb-2">Online Gateway & Pledge Checkout</h5>
                         <p class="text-muted small mb-4">Pay online securely via RazorPay (Cards, NetBanking, UPI) or register an expected pledge for our Harapanahalli initiatives.</p>
 
-                        <form method="POST" id="donationForm">
+                        <!-- Status & Error Alert Container -->
+                        <div id="checkoutAlert" class="alert d-none rounded-3 small" role="alert"></div>
+
+                        <form id="donationForm">
                             {% csrf_token %}
 
                             <!-- Quick Amount Presets -->
@@ -154,15 +157,15 @@
                                     <label class="form-label small fw-bold text-secondary">Target Fulfillment Date:</label>
                                     {{ form.pledge_due_date }}
                                     <p class="small text-muted mb-0 mt-1">
-                                        We will generate a direct RazorPay link and send a WhatsApp reminder to {{ TRUST_PHONE }} before the target date.
+                                        We will generate a direct RazorPay link and send a WhatsApp reminder before the target date.
                                     </p>
                                 </div>
                             </div>
 
                             <!-- Submit Button -->
                             <div class="d-grid mt-4">
-                                <button type="submit" class="btn btn-warning btn-lg fw-bold py-3 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2">
-                                    <i class="fa-solid fa-lock text-dark"></i>
+                                <button type="submit" id="submitBtn" class="btn btn-warning btn-lg fw-bold py-3 rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                    <i class="fa-solid fa-lock text-dark" id="submitBtnIcon"></i>
                                     <span id="submitBtnText">Proceed to Secure RazorPay Checkout &rarr;</span>
                                 </button>
                             </div>
@@ -173,10 +176,64 @@
         </div>
     </div>
 </div>
+
+<!-- Simulation / Offline Checkout Modal (For instant testing without payment blocker) -->
+<div class="modal fade" id="simulationModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%);">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-flask me-1"></i> RazorPay Test Gateway</span>
+                    <h5 class="modal-title fw-bold mb-0">Complete Test Payment</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <i class="fa-solid fa-shield-halved text-success fa-3x"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1">Meezan Welfare & Charitable Trust</h5>
+                <p class="text-muted small" id="simCauseName">Community Welfare Fund</p>
+
+                <div class="p-3 bg-light rounded-3 my-3 text-start small border">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Order ID:</span>
+                        <code class="text-primary font-monospace fw-bold" id="simOrderId">order_sim_12345</code>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Donor:</span>
+                        <strong class="text-dark" id="simDonorName">Donor</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">WhatsApp:</span>
+                        <span class="text-dark" id="simDonorPhone">+91XXXXXXXXXX</span>
+                    </div>
+                    <div class="d-flex justify-content-between pt-2 border-top">
+                        <span class="text-muted fw-bold">Total Amount:</span>
+                        <strong class="text-success fs-5 fw-extrabold" id="simAmount">₹2,500.00</strong>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="button" id="simSuccessBtn" class="btn btn-success btn-lg fw-bold rounded-pill shadow-sm">
+                        <i class="fa-solid fa-circle-check me-2"></i> Simulate Successful RazorPay Payment
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">
+                        Cancel Payment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
+<!-- RazorPay Checkout Script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 <script>
+    // Amount preset buttons
     const amountButtons = document.querySelectorAll('.btn-amount');
     const amountInput = document.getElementById('id_amount');
 
@@ -188,9 +245,13 @@
         });
     });
 
+    // Pledge toggle handler
     const pledgeCheck = document.getElementById('is_pledge_check');
     const pledgeFields = document.getElementById('pledgeFields');
     const submitBtnText = document.getElementById('submitBtnText');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitBtnIcon = document.getElementById('submitBtnIcon');
+    const checkoutAlert = document.getElementById('checkoutAlert');
 
     if (pledgeCheck) {
         pledgeCheck.addEventListener('change', function() {
@@ -202,6 +263,208 @@
                 submitBtnText.innerText = 'Proceed to Secure RazorPay Checkout →';
             }
         });
+    }
+
+    function showAlert(type, message) {
+        checkoutAlert.className = `alert alert-${type} rounded-3 small`;
+        checkoutAlert.innerHTML = message;
+        checkoutAlert.classList.remove('d-none');
+        checkoutAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Razorpay Checkout & Pledge Flow Integration
+    const donationForm = document.getElementById('donationForm');
+    let currentDonationData = null;
+
+    donationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const amount = document.getElementById('id_amount').value;
+        const donorName = document.getElementById('id_donor_name').value.trim();
+        const donorPhone = document.getElementById('id_donor_phone').value.trim();
+        const donorEmail = document.getElementById('id_donor_email').value.trim();
+        const panNumber = document.getElementById('id_pan_number').value.trim();
+        const initiativeSelect = document.getElementById('id_initiative');
+        const initiativeId = initiativeSelect ? initiativeSelect.value : '';
+        const isPledge = pledgeCheck ? pledgeCheck.checked : false;
+        const pledgeDueDateInput = document.getElementById('id_pledge_due_date');
+        const pledgeDueDate = pledgeDueDateInput ? pledgeDueDateInput.value : '';
+
+        if (!donorName || !donorPhone) {
+            showAlert('danger', '<i class="fa-solid fa-triangle-exclamation me-1"></i> Please provide your Full Name and WhatsApp Contact Number.');
+            return;
+        }
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtnIcon.className = 'fa-solid fa-spinner fa-spin text-dark';
+        submitBtnText.innerText = isPledge ? 'Registering Pledge in Database...' : 'Generating Secure RazorPay Order...';
+
+        const payload = {
+            amount: amount,
+            donor_name: donorName,
+            donor_phone: donorPhone,
+            donor_email: donorEmail,
+            pan_number: panNumber,
+            initiative: initiativeId,
+            is_pledge: isPledge,
+            pledge_due_date: pledgeDueDate
+        };
+
+        fetch("{% url 'api_create_order' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || '{{ csrf_token }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                showAlert('danger', '<i class="fa-solid fa-circle-xmark me-1"></i> ' + (data.error || 'Failed to initiate donation.'));
+                resetSubmitBtn();
+                return;
+            }
+
+            // Case 1: Pledge-Only Submission
+            if (data.is_pledge) {
+                showAlert('success', '<i class="fa-solid fa-circle-check me-1"></i> ' + data.message);
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || "{% url 'dashboard' %}";
+                }, 1800);
+                return;
+            }
+
+            // Case 2: Immediate Online Payment via RazorPay
+            currentDonationData = data;
+
+            // Check if Razorpay SDK loaded and not forced simulation
+            if (typeof Razorpay !== 'undefined' && !data.is_simulated) {
+                const options = {
+                    key: data.key_id,
+                    amount: data.amount_paise,
+                    currency: data.currency,
+                    name: "Meezan Welfare and Charitable Trust",
+                    description: "Donation for " + data.initiative_title,
+                    image: "/static/img/meezan_sbi_qr.jpg",
+                    order_id: data.order_id,
+                    handler: function(response) {
+                        verifyPayment(data.donation_id, response.razorpay_order_id, response.razorpay_payment_id, response.razorpay_signature);
+                    },
+                    prefill: {
+                        name: data.donor_name,
+                        email: data.donor_email,
+                        contact: data.donor_phone
+                    },
+                    theme: {
+                        color: "#047857"
+                    },
+                    modal: {
+                        ondismiss: function() {
+                            resetSubmitBtn();
+                        }
+                    }
+                };
+
+                try {
+                    const rzp = new Razorpay(options);
+                    rzp.on('payment.failed', function(response) {
+                        showAlert('danger', '<i class="fa-solid fa-triangle-exclamation me-1"></i> Payment Failed: ' + response.error.description);
+                        resetSubmitBtn();
+                    });
+                    rzp.open();
+                } catch (err) {
+                    launchSimulationModal(data);
+                }
+            } else {
+                // Launch simulation modal for sandbox / test key mode
+                launchSimulationModal(data);
+            }
+        })
+        .catch(err => {
+            console.error('Order creation error:', err);
+            showAlert('danger', '<i class="fa-solid fa-triangle-exclamation me-1"></i> Network error creating RazorPay order. Please try again.');
+            resetSubmitBtn();
+        });
+    });
+
+    function launchSimulationModal(data) {
+        document.getElementById('simOrderId').innerText = data.order_id;
+        document.getElementById('simDonorName').innerText = data.donor_name;
+        document.getElementById('simDonorPhone').innerText = data.donor_phone;
+        document.getElementById('simCauseName').innerText = data.initiative_title;
+        document.getElementById('simAmount').innerText = '₹' + parseFloat(data.amount).toLocaleString('en-IN', {minimumFractionDigits: 2});
+
+        const simModalEl = document.getElementById('simulationModal');
+        const simModal = new bootstrap.Modal(simModalEl);
+        simModal.show();
+
+        document.getElementById('simSuccessBtn').onclick = function() {
+            simModal.hide();
+            const mockPayId = 'pay_sim_' + Date.now();
+            verifyPayment(data.donation_id, data.order_id, mockPayId, 'simulated_valid_sig');
+        };
+    }
+
+    function verifyPayment(donationId, orderId, paymentId, signature) {
+        submitBtnText.innerText = 'Verifying Payment & Updating Trust Totals...';
+
+        fetch("{% url 'api_verify_payment' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                donation_id: donationId,
+                razorpay_order_id: orderId,
+                razorpay_payment_id: paymentId,
+                razorpay_signature: signature
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showAlert('success', '<i class="fa-solid fa-circle-check me-1"></i> Payment confirmed! Receipt #' + data.receipt_number + ' generated. Redirecting to official 80G receipt...');
+                setTimeout(() => {
+                    window.location.href = data.receipt_url;
+                }, 1200);
+            } else {
+                showAlert('danger', '<i class="fa-solid fa-circle-xmark me-1"></i> ' + (data.message || 'Payment signature verification failed.'));
+                resetSubmitBtn();
+            }
+        })
+        .catch(err => {
+            console.error('Verification error:', err);
+            showAlert('danger', '<i class="fa-solid fa-triangle-exclamation me-1"></i> Payment verification error. Please contact trust helpline.');
+            resetSubmitBtn();
+        });
+    }
+
+    function resetSubmitBtn() {
+        submitBtn.disabled = false;
+        submitBtnIcon.className = 'fa-solid fa-lock text-dark';
+        if (pledgeCheck && pledgeCheck.checked) {
+            submitBtnText.innerText = 'Register Pledge & Dispatch WhatsApp Payment Link';
+        } else {
+            submitBtnText.innerText = 'Proceed to Secure RazorPay Checkout →';
+        }
     }
 
     function copyText(val) {
