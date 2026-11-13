@@ -271,6 +271,8 @@ def admin_portal_view(request):
         'recent_donations': recent_donations,
         'activity_photos': ActivityPhoto.objects.select_related('initiative').all().order_by('-date_taken', '-created_at'),
         'photo_form': ActivityPhotoForm(),
+        'initiative_form': InitiativeForm(),
+        'categories': Initiative.CATEGORY_CHOICES,
         'activities': MaintenanceActivity.objects.all(),
     }
     return render(request, 'core/admin_portal.html', context)
@@ -774,14 +776,20 @@ def whatsapp_logs(request):
 
 @staff_required
 def manage_initiative(request, pk=None):
-    """Create or edit an initiative with image upload."""
+    """Create or edit an initiative with image upload and content updates."""
     initiative = get_object_or_404(Initiative, pk=pk) if pk else None
     if request.method == 'POST':
         form = InitiativeForm(request.POST, request.FILES, instance=initiative)
         if form.is_valid():
             saved = form.save()
             messages.success(request, f"Initiative '{saved.title}' saved successfully!")
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
             return redirect('admin_portal')
+        else:
+            error_details = ", ".join([f"{f}: {e[0]}" for f, e in form.errors.items()])
+            messages.error(request, f"Failed to save initiative. {error_details}")
     else:
         form = InitiativeForm(instance=initiative)
     return render(request, 'core/manage_form.html', {
@@ -789,6 +797,16 @@ def manage_initiative(request, pk=None):
         'title': 'Edit Initiative' if pk else 'Add New Initiative',
         'subtitle': 'Manage community welfare initiative, set target budget, and upload banner.',
     })
+
+
+@staff_required
+def delete_initiative(request, pk):
+    """Delete an initiative with confirmation."""
+    initiative = get_object_or_404(Initiative, pk=pk)
+    title = initiative.title
+    initiative.delete()
+    messages.info(request, f"Initiative '{title}' was deleted successfully.")
+    return redirect('admin_portal')
 
 
 @staff_required
@@ -857,9 +875,14 @@ def manage_activity_photo(request, pk=None):
         if form.is_valid():
             saved = form.save()
             messages.success(request, f"Photo update '{saved.title}' published successfully! It is now live across the dashboard and activities pages.")
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
             return redirect('admin_portal')
     else:
-        form = ActivityPhotoForm(instance=photo)
+        init_id = request.GET.get('initiative')
+        initial = {'initiative': init_id} if init_id else {}
+        form = ActivityPhotoForm(instance=photo, initial=initial)
     return render(request, 'core/manage_form.html', {
         'form': form,
         'title': 'Edit Activity Photo & Story' if pk else 'Upload New Activity Photo & Story',

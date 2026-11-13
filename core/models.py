@@ -58,6 +58,16 @@ class Initiative(models.Model):
         return completed or Decimal('0.00')
 
     @property
+    def raised_amount(self):
+        """Alias for total_raised."""
+        return self.total_raised
+
+    @property
+    def description(self):
+        """Fallback property for description."""
+        return self.short_description or self.detailed_description
+
+    @property
     def pending_amount(self):
         """Remaining amount to reach target goal."""
         remaining = self.target_amount - self.total_raised

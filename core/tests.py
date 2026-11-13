@@ -321,3 +321,62 @@ class MeezanTrustComprehensiveTestCase(TestCase):
 
         home_res = self.client.get(reverse('home'))
         self.assertContains(home_res, 'Test Free Health Camp in Harapanahalli')
+
+    def test_activity_content_and_image_upload_management(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        # 1. Unauthenticated edit attempt should redirect to login
+        res = self.client.get(reverse('initiative_edit', kwargs={'pk': self.initiative.id}))
+        self.assertEqual(res.status_code, 302)
+        self.assertIn(reverse('admin_login'), res.url)
+
+        # 2. Login as staff user
+        self.client.login(username='trustee_admin', password='testpassword123')
+
+        # 3. Upload a new banner image and update content
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x05\x04\x04'
+            b'\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44'
+            b'\x01\x00\x3b'
+        )
+        test_banner = SimpleUploadedFile('initiative_banner.gif', small_gif, content_type='image/gif')
+
+        update_res = self.client.post(reverse('initiative_edit', kwargs={'pk': self.initiative.id}), {
+            'title': '1. Iftar Koota Interfaith Harmony Banquet (Updated)',
+            'category': 'HUNGER',
+            'short_description': 'Updated short summary for cards and outreach',
+            'detailed_description': 'Expanded mission description and volunteer program.',
+            'target_amount': '450000.00',
+            'image': test_banner,
+            'start_date': '2026-03-01',
+            'is_active': True,
+            'is_featured': True
+        })
+        self.assertEqual(update_res.status_code, 302)
+
+        # 4. Verify DB updates
+        self.initiative.refresh_from_db()
+        self.assertEqual(self.initiative.title, '1. Iftar Koota Interfaith Harmony Banquet (Updated)')
+        self.assertEqual(self.initiative.short_description, 'Updated short summary for cards and outreach')
+        self.assertEqual(self.initiative.target_amount, Decimal('450000.00'))
+        self.assertTrue(bool(self.initiative.image))
+
+        # 5. Verify public display
+        list_res = self.client.get(reverse('initiatives_list'))
+        self.assertContains(list_res, '1. Iftar Koota Interfaith Harmony Banquet (Updated)')
+        self.assertContains(list_res, 'Updated short summary for cards and outreach')
+
+        detail_res = self.client.get(reverse('initiative_detail', kwargs={'slug': self.initiative.slug}))
+        self.assertContains(detail_res, 'Expanded mission description and volunteer program.')
+
+        # 6. Test delete initiative
+        del_init = Initiative.objects.create(
+            title='Temporary Test Initiative',
+            category='GENERAL',
+            short_description='Temp test',
+            detailed_description='Temp details',
+            target_amount=Decimal('50000.00')
+        )
+        del_res = self.client.post(reverse('initiative_delete', kwargs={'pk': del_init.id}))
+        self.assertEqual(del_res.status_code, 302)
+        self.assertFalse(Initiative.objects.filter(id=del_init.id).exists())

@@ -33,6 +33,7 @@ urlpatterns = [
     # Content & Expense Management (Trustee / Staff Portal)
     path('manage/initiative/new/', views.manage_initiative, name='initiative_create'),
     path('manage/initiative/<int:pk>/edit/', views.manage_initiative, name='initiative_edit'),
+    path('manage/initiative/<int:pk>/delete/', views.delete_initiative, name='initiative_delete'),
     path('manage/event/new/', views.manage_event, name='event_create'),
     path('manage/event/<int:pk>/edit/', views.manage_event, name='event_edit'),
     path('manage/expense/new/', views.manage_expense, name='expense_create'),

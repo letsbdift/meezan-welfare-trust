@@ -14,10 +14,37 @@
             <h1 class="fw-bold text-dark mb-1">Our Charitable Initiatives</h1>
             <p class="text-secondary mb-0">Explore our ongoing campaigns, track expected targets and raised funds, and contribute directly.</p>
         </div>
-        <a href="{% url 'initiative_create' %}" class="btn btn-outline-primary rounded-pill fw-semibold">
-            <i class="fa-solid fa-plus me-1"></i> Upload Initiative
-        </a>
+        <div class="d-flex gap-2">
+            {% if user.is_authenticated and user.is_staff %}
+            <a href="{% url 'admin_portal' %}#activities" class="btn btn-warning rounded-pill fw-bold text-dark">
+                <i class="fa-solid fa-gear me-1"></i> Portal Management
+            </a>
+            {% endif %}
+            <a href="{% url 'initiative_create' %}" class="btn btn-outline-primary rounded-pill fw-semibold">
+                <i class="fa-solid fa-plus me-1"></i> Upload Initiative
+            </a>
+        </div>
     </div>
+
+    {% if user.is_authenticated and user.is_staff %}
+    <!-- Admin Management Quick Bar -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-dark text-white p-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <span class="badge bg-warning text-dark me-2 fw-bold"><i class="fa-solid fa-shield-halved me-1"></i> Trustee Mode</span>
+                <span class="small text-white-50">You can upload images, modify descriptions, and update targets for all activities directly below.</span>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'initiative_create' %}?next={% url 'initiatives_list' %}" class="btn btn-sm btn-success rounded-pill fw-bold px-3">
+                    <i class="fa-solid fa-plus me-1"></i> Add Activity & Banner
+                </a>
+                <a href="{% url 'photo_create' %}" class="btn btn-sm btn-outline-light rounded-pill fw-bold px-3">
+                    <i class="fa-solid fa-camera me-1"></i> Upload Field Photo Story
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Category Filter Pills -->
     <div class="d-flex flex-wrap gap-2 mb-4">
@@ -81,6 +108,14 @@
                                 Details
                             </a>
                         </div>
+                        {% if user.is_authenticated and user.is_staff %}
+                        <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center">
+                            <span class="badge bg-secondary small"><i class="fa-solid fa-shield me-1"></i> Staff</span>
+                            <a href="{% url 'initiative_edit' init.id %}?next={% url 'initiatives_list' %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
+                                <i class="fa-solid fa-pen-to-square me-1"></i> Edit Content & Image
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

@@ -213,28 +213,123 @@
                 <div class="tab-pane fade" id="activities" role="tabpanel">
                     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
                         <div>
-                            <h5 class="fw-bold mb-1">Meezan Trust Initiatives & Activities</h5>
-                            <p class="text-muted small mb-0">Manage details, photo banners, descriptions, and fundraising goals.</p>
+                            <h5 class="fw-bold mb-1">Meezan Trust Initiatives & Activities ({{ initiatives.count }})</h5>
+                            <p class="text-muted small mb-0">Upload banner images, update activity details, mission text, and target budgets in real time.</p>
                         </div>
-                        <a href="{% url 'initiative_create' %}" class="btn btn-success rounded-pill px-3 fw-bold">
-                            <i class="fa-solid fa-plus me-1"></i> Add New Activity / Initiative
-                        </a>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addActivityModal">
+                                <i class="fa-solid fa-plus me-1"></i> Add New Activity / Initiative
+                            </button>
+                        </div>
                     </div>
 
+                    <!-- Add New Activity Modal -->
+                    <div class="modal fade" id="addActivityModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content rounded-4 border-0 shadow-lg">
+                                <form action="{% url 'initiative_create' %}" method="POST" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{% url 'admin_portal' %}#activities">
+                                    <div class="modal-header text-white" style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%);">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fa-solid fa-hand-holding-heart fs-5 text-warning"></i>
+                                            <h5 class="modal-title fw-bold mb-0">Add New Activity / Initiative</h5>
+                                        </div>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-4 text-start">
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold small text-dark">Activity Title *</label>
+                                                <input type="text" name="title" class="form-control rounded-3" placeholder="e.g. Free Eye Screening & Cataract Surgery Camp" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold small text-dark">Category *</label>
+                                                <select name="category" class="form-select rounded-3">
+                                                    {% for code, label in categories %}
+                                                    <option value="{{ code }}">{{ label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold small text-dark">Target Budget (INR) *</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-light fw-bold">₹</span>
+                                                    <input type="number" name="target_amount" class="form-control rounded-end-3" placeholder="500000" min="1000" step="500" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold small text-dark">Upload Activity Banner Image (JPG, PNG, WEBP)</label>
+                                                <input type="file" name="image" class="form-control rounded-3" accept="image/*" onchange="previewNewActivityImage(this)">
+                                                <div id="newActivityImagePreview" class="mt-2 d-none text-center p-2 border rounded-3 bg-light">
+                                                    <span class="badge bg-primary mb-1">Image Preview</span>
+                                                    <div><img id="newActivityImgTag" class="rounded-3 shadow-sm border" style="max-height: 160px; max-width: 100%; object-fit: cover;"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold small text-dark">Short Summary (for Cards & Highlights) *</label>
+                                                <input type="text" name="short_description" class="form-control rounded-3" placeholder="Brief summary displayed on homepage cards..." required>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-bold small text-dark">Detailed Description & Objectives *</label>
+                                                <textarea name="detailed_description" rows="5" class="form-control rounded-3" placeholder="Full mission outline, community beneficiaries, items distributed, and implementation roadmap..." required></textarea>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold small text-dark">Start Date</label>
+                                                <input type="date" name="start_date" class="form-control rounded-3" value="{% now 'Y-m-d' %}">
+                                            </div>
+                                            <div class="col-md-6 d-flex align-items-center gap-4 pt-3">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" name="is_active" id="newInitActive" checked>
+                                                    <label class="form-check-label fw-bold text-dark small" for="newInitActive">Active Initiative</label>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" name="is_featured" id="newInitFeatured">
+                                                    <label class="form-check-label fw-bold text-dark small" for="newInitFeatured">Featured on Home</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer bg-light p-3">
+                                        <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                                            <i class="fa-solid fa-check me-1"></i> Create Activity & Publish
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activities Grid -->
                     <div class="row g-3">
                         {% for init in initiatives %}
                         <div class="col-md-6 col-lg-4">
-                            <div class="card h-100 border rounded-4 shadow-sm overflow-hidden">
-                                {% if init.image %}
-                                <img src="{{ init.image.url }}" class="card-img-top" style="height: 160px; object-fit: cover;" alt="{{ init.title }}">
-                                {% else %}
-                                <div class="bg-light p-4 text-center text-muted" style="height: 160px; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-hands-holding-heart fa-3x text-success opacity-50"></i>
+                            <div class="card h-100 border rounded-4 shadow-sm overflow-hidden bg-white">
+                                <div class="position-relative">
+                                    {% if init.image %}
+                                    <img src="{{ init.image.url }}" class="card-img-top" style="height: 180px; object-fit: cover;" alt="{{ init.title }}">
+                                    {% else %}
+                                    <div class="bg-light p-4 text-center text-muted" style="height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                        <i class="fa-solid fa-hands-holding-heart fa-2x text-success opacity-50 mb-1"></i>
+                                        <span class="small text-muted fw-bold">No banner image uploaded</span>
+                                        <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 mt-2" data-bs-toggle="modal" data-bs-target="#editActivityModal{{ init.id }}">
+                                            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Upload Image
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                    <span class="position-absolute top-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white small">
+                                        {{ init.get_category_display }}
+                                    </span>
+                                    {% if init.is_featured %}
+                                    <span class="position-absolute top-0 end-0 m-2 badge bg-warning text-dark small fw-bold">
+                                        <i class="fa-solid fa-star me-1"></i> Featured
+                                    </span>
+                                    {% endif %}
                                 </div>
-                                {% endif %}
                                 <div class="card-body p-3 d-flex flex-column">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="badge bg-light text-dark border">{{ init.get_category_display }}</span>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="small text-muted">ID: #{{ init.id }}</span>
                                         {% if init.is_active %}
                                         <span class="badge bg-success-subtle text-success">Active</span>
                                         {% else %}
@@ -242,22 +337,173 @@
                                         {% endif %}
                                     </div>
                                     <h6 class="fw-bold text-dark mb-1">{{ init.title }}</h6>
-                                    <p class="text-muted small flex-grow-1 mb-2">{{ init.description|truncatewords:15 }}</p>
-                                    <div class="d-flex justify-content-between small text-muted mb-2">
-                                        <span>Target: <strong>₹{{ init.target_amount|floatformat:0|intcomma }}</strong></span>
-                                        <span class="text-success">Raised: <strong>₹{{ init.raised_amount|floatformat:0|intcomma }}</strong></span>
+                                    <p class="text-secondary small flex-grow-1 mb-2" style="font-size: 0.85rem; line-height: 1.4;">
+                                        {{ init.short_description|default:init.detailed_description|truncatewords:15 }}
+                                    </p>
+                                    
+                                    <div class="bg-light p-2 rounded-3 mb-2 border">
+                                        <div class="d-flex justify-content-between small text-muted mb-1">
+                                            <span>Target: <strong class="text-dark">₹{{ init.target_amount|floatformat:0|intcomma }}</strong></span>
+                                            <span class="text-success">Raised: <strong>₹{{ init.total_raised|floatformat:0|intcomma }}</strong></span>
+                                        </div>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar bg-success" style="width: {{ init.progress_percentage }}%;"></div>
+                                        </div>
                                     </div>
-                                    <div class="border-top pt-2 d-flex justify-content-between">
-                                        <a href="{% url 'initiative_detail' init.slug %}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2">
-                                            <i class="fa-solid fa-eye me-1"></i> View
+
+                                    <div class="d-flex justify-content-between align-items-center small mb-3">
+                                        <span class="text-muted"><i class="fa-solid fa-camera text-success me-1"></i><strong>{{ init.photos.count }}</strong> Field Photos</span>
+                                        <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-2 py-1" onclick="openPhotoModalForInit({{ init.id }}, '{{ init.title|escapejs }}')">
+                                            <i class="fa-solid fa-plus me-1"></i> Add Photo Story
+                                        </button>
+                                    </div>
+
+                                    <div class="border-top pt-2 d-flex justify-content-between align-items-center gap-1">
+                                        <a href="{% url 'initiative_detail' init.slug %}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2" title="View Public Page">
+                                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                         </a>
-                                        <a href="{% url 'initiative_edit' init.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
-                                            <i class="fa-solid fa-pen-to-square me-1"></i> Edit
-                                        </a>
+                                        <div class="d-flex gap-1">
+                                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#editActivityModal{{ init.id }}">
+                                                <i class="fa-solid fa-pen-to-square me-1"></i> Edit & Upload Image
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2" data-bs-toggle="modal" data-bs-target="#deleteActivityModal{{ init.id }}" title="Delete Activity">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Edit Activity & Banner Modal -->
+                        <div class="modal fade" id="editActivityModal{{ init.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content rounded-4 border-0 shadow-lg">
+                                    <form action="{% url 'initiative_edit' init.id %}" method="POST" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{% url 'admin_portal' %}#activities">
+                                        <div class="modal-header bg-dark text-white">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fa-solid fa-pen-to-square text-warning fs-5"></i>
+                                                <h5 class="modal-title fw-bold mb-0">Edit Activity & Upload Image: {{ init.title|truncatechars:35 }}</h5>
+                                            </div>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body p-4 text-start">
+                                            <!-- Current Banner Image Display -->
+                                            <div class="mb-3 p-3 bg-light rounded-3 border">
+                                                <label class="form-label fw-bold small text-dark d-block">Current Banner Image:</label>
+                                                {% if init.image %}
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <img src="{{ init.image.url }}" alt="{{ init.title }}" class="rounded-3 shadow-sm border" style="height: 80px; width: 130px; object-fit: cover;">
+                                                    <div>
+                                                        <span class="badge bg-success text-white small mb-1">Active Banner</span>
+                                                        <div class="font-monospace small text-muted">{{ init.image.name }}</div>
+                                                        <small class="text-secondary">Upload a new image below if you want to replace it.</small>
+                                                    </div>
+                                                </div>
+                                                {% else %}
+                                                <div class="text-muted small">
+                                                    <i class="fa-solid fa-circle-info text-warning me-1"></i> No banner image currently uploaded for this activity. Select a file below to set one.
+                                                </div>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="row g-3">
+                                                <div class="col-12">
+                                                    <label class="form-label fw-bold small text-dark">Upload / Replace Activity Banner Image (JPG, PNG, WEBP)</label>
+                                                    <input type="file" name="image" class="form-control rounded-3" accept="image/*" onchange="previewEditImage(this, 'editImgPreview{{ init.id }}')">
+                                                    <div id="editImgPreview{{ init.id }}" class="mt-2 d-none text-center p-2 border rounded-3 bg-light">
+                                                        <span class="badge bg-primary mb-1">New Image Preview</span>
+                                                        <div><img class="rounded-3 shadow-sm border" style="max-height: 150px; max-width: 100%; object-fit: cover;"></div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12">
+                                                    <label class="form-label fw-bold small text-dark">Activity Title *</label>
+                                                    <input type="text" name="title" class="form-control rounded-3" value="{{ init.title }}" required>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold small text-dark">Category *</label>
+                                                    <select name="category" class="form-select rounded-3">
+                                                        {% for code, label in categories %}
+                                                        <option value="{{ code }}" {% if init.category == code %}selected{% endif %}>{{ label }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold small text-dark">Expected Target Budget (INR) *</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-light fw-bold">₹</span>
+                                                        <input type="number" name="target_amount" class="form-control rounded-end-3" value="{{ init.target_amount|floatformat:0 }}" min="1000" step="500" required>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12">
+                                                    <label class="form-label fw-bold small text-dark">Short Summary (for Cards & Highlights) *</label>
+                                                    <input type="text" name="short_description" class="form-control rounded-3" value="{{ init.short_description }}" required>
+                                                </div>
+
+                                                <div class="col-12">
+                                                    <label class="form-label fw-bold small text-dark">Detailed Description & Objectives *</label>
+                                                    <textarea name="detailed_description" rows="5" class="form-control rounded-3" required>{{ init.detailed_description }}</textarea>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label class="form-label fw-bold small text-dark">Start Date</label>
+                                                    <input type="date" name="start_date" class="form-control rounded-3" value="{{ init.start_date|date:'Y-m-d' }}">
+                                                </div>
+
+                                                <div class="col-md-6 d-flex align-items-center gap-4 pt-3">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" name="is_active" id="activeEdit{{ init.id }}" {% if init.is_active %}checked{% endif %}>
+                                                        <label class="form-check-label fw-bold text-dark small" for="activeEdit{{ init.id }}">Active Initiative</label>
+                                                    </div>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" name="is_featured" id="featuredEdit{{ init.id }}" {% if init.is_featured %}checked{% endif %}>
+                                                        <label class="form-check-label fw-bold text-dark small" for="featuredEdit{{ init.id }}">Featured on Home</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer bg-light p-3">
+                                            <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                                                <i class="fa-solid fa-cloud-arrow-up me-1"></i> Save Activity & Banner
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delete Activity Modal -->
+                        <div class="modal fade" id="deleteActivityModal{{ init.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content rounded-4 border-0 shadow">
+                                    <form action="{% url 'initiative_delete' init.id %}" method="POST">
+                                        {% csrf_token %}
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i> Delete Activity</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body p-4 text-start">
+                                            <p class="mb-2">Are you sure you want to delete the activity <strong>"{{ init.title }}"</strong>?</p>
+                                            <div class="alert alert-warning small mb-0">
+                                                <i class="fa-solid fa-circle-exclamation me-1"></i> This will remove this activity from the public site, its target budget from expected totals, and unassign any associated photos.
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer bg-light">
+                                            <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Confirm Delete</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
                         {% endfor %}
                     </div>
                 </div>
@@ -550,8 +796,12 @@
                                             </div>
                                         </div>
                                         <div class="mb-3">
-                                            <label class="form-label fw-bold small text-dark">Select Image File * (JPG, PNG)</label>
-                                            <input type="file" name="image" class="form-control form-control-lg rounded-3" accept="image/*" required>
+                                            <label class="form-label fw-bold small text-dark">Select Image File * (JPG, PNG, WEBP)</label>
+                                            <input type="file" name="image" class="form-control form-control-lg rounded-3" accept="image/*" required onchange="previewEditImage(this, 'fieldPhotoPreview')">
+                                            <div id="fieldPhotoPreview" class="mt-2 d-none text-center p-2 border rounded-3 bg-light">
+                                                <span class="badge bg-primary mb-1">Selected Photo Preview</span>
+                                                <div><img class="rounded-3 shadow-sm border" style="max-height: 180px; max-width: 100%; object-fit: cover;"></div>
+                                            </div>
                                             <div class="form-text small">Upload an authentic high-resolution photograph from the camp or field drive.</div>
                                         </div>
                                         <div class="mb-3">
@@ -637,4 +887,70 @@
         </div>
     </div>
 </div>
+
+<script>
+function previewNewActivityImage(input) {
+    const file = input.files[0];
+    const previewBox = document.getElementById('newActivityImagePreview');
+    const previewImg = document.getElementById('newActivityImgTag');
+    if (file && previewBox && previewImg) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            previewBox.classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function previewEditImage(input, previewContainerId) {
+    const file = input.files[0];
+    const box = document.getElementById(previewContainerId);
+    if (file && box) {
+        const img = box.querySelector('img');
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (img) img.src = e.target.result;
+            box.classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function openPhotoModalForInit(initId, initTitle) {
+    const modalEl = document.getElementById('uploadPhotoModal');
+    if (modalEl) {
+        const selectEl = modalEl.querySelector('select[name="initiative"]');
+        if (selectEl) {
+            selectEl.value = initId;
+        }
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Retain active tab on page reload / redirect with hash
+    if (window.location.hash) {
+        const tabButton = document.querySelector(`button[data-bs-target="${window.location.hash}"]`);
+        if (tabButton) {
+            const tab = new bootstrap.Tab(tabButton);
+            tab.show();
+        }
+    }
+
+    // Update URL hash when tabs switch
+    const tabButtons = document.querySelectorAll('#portalTab button[data-bs-toggle="tab"]');
+    tabButtons.forEach(btn => {
+        btn.addEventListener('shown.bs.tab', function(e) {
+            const targetHash = e.target.getAttribute('data-bs-target');
+            if (history.replaceState) {
+                history.replaceState(null, null, targetHash);
+            } else {
+                location.hash = targetHash;
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
